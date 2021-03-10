@@ -1,0 +1,633 @@
+
+
+<!DOCTYPE html>
+<html lang="zh" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+  
+  <meta name="theme-color" content="#2f4154">
+  
+    <meta name="description" content="什么是IRC？Internet中继聊天（IRC）是一种协议，用于创建可以使用IRC客户端连接的IRC“网络”IRC服务器集。网络通常是独立的。在网络内部，有许多渠道可以由用户加入。通常任何人都可以创建一个频道。通道通常以井号（＃）为前缀，有时包含多个井号以表示不同类型的通道。个人用户还可以使用私人消息私下聊天。许多Linode客户使用IRC获得技术帮助和交流知识。">
+  
+  <meta name="author" content="0x777">
+  <meta name="keywords" content="">
+  
+  <title>IRC-Botnet - 0x777&#39;Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.4.0/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"0x777.cn","root":"/","version":"1.8.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"onlypost":false},"web_analytics":{"enable":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}}};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 5.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>0x777</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                主页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                存档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/links/">
+                <i class="iconfont icon-link-fill"></i>
+                友链
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" href="javascript:">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('/img/default.png') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="IRC-Botnet">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2020-12-24 01:26" pubdate>
+        December 24, 2020 am
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      1.7k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      22
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">IRC-Botnet</h1>
+            
+            <div class="markdown-body">
+              <h2 id="什么是IRC？"><a href="#什么是IRC？" class="headerlink" title="什么是IRC？"></a>什么是IRC？</h2><p>Internet中继聊天（IRC）是一种协议，用于创建可以使用IRC客户端连接的IRC“网络”IRC服务器集。网络通常是独立的。在网络内部，有许多渠道可以由用户加入。通常任何人都可以创建一个频道。通道通常以井号（<strong>＃</strong>）为前缀，有时包含多个井号以表示不同类型的通道。个人用户还可以使用私人消息私下聊天。许多Linode客户使用IRC获得技术帮助和交流知识。</p>
+<a id="more"></a>
+
+<p>官方的Linode信道是**#linode<strong>的OFTC网络（上</strong>irc.oftc.net**）。</p>
+<p>在IRC上，用户按以下四个特征分类：</p>
+<ul>
+<li>昵称，用户选择的唯一字符串，显示为句柄。</li>
+<li>用户名，是用户提供的昵称的单独字符串。不必是唯一的。</li>
+<li>主机，用户连接的IP或主机名。</li>
+<li>真实姓名，包含您姓名的可选参数（允许使用空格）</li>
+</ul>
+<p>用户通常表示为<code>nickname!username@host</code></p>
+<p>典型的僵尸网络由僵尸服务器（通常是一台IRC服务器）和一个或更多的僵尸客户端组成。有成百上千的僵尸客户端组成的僵尸网络也仅仅可以被称作为小型僵尸网络。</p>
+<p>IRC 命令:</p>
+<p>PASS：设置IRC连接密码</p>
+<p>USER：设置username,，hostname，realname</p>
+<p>NICK：设置昵称</p>
+<p>PING：验证客户端是否存活</p>
+<p>MODE：设置IRC连接模式</p>
+<p>JOIN：加入频道（频道就类似群的概念）</p>
+<p>PRIVMSG：发送私有消息（最常用的IRC命令）</p>
+<p>001：成功建立IRC连接后服务器返回的welcome消息 </p>
+<p>443：昵称重复</p>
+<p>首先我们说下IRC型僵尸网络：它是出现的最早、大数量存在的僵尸群。主要利用IRC协议构造命令与控制通道，容易创建。一个服务器可以很容易的创建和控制多台僵尸主机。那么，僵尸主机和C&amp;C服务器之间是怎么进行通信的呢？僵尸程序执行后，会解码内置的配置信息，获取C&amp;C服务器域名及端口，以此来建立三次握手连接，会通过发送固定前缀的NICK和USER命令，加入预定义频道后，僵尸程序会进入PINC/PONC状态等待接收指令。因此通过IRC协议对僵尸网络的控制是相对比较容易的。但也有不足之处，如果中央服务器被关闭，僵尸程序就会失去与C&amp;C服务器的通信，因此攻击也就不存在啦。</p>
+<h5 id=""><a href="#" class="headerlink" title=""></a></h5><h5 id="1-依存关系"><a href="#1-依存关系" class="headerlink" title="1.依存关系"></a>1.依存关系</h5><p>第一步，我们将从<em>git</em>开始安装构建和运行InspIRCd所需的依赖项：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install git<br></code></pre></td></tr></table></figure>
+
+<p>接下来是<em>Perl，</em>因此我们可以运行InspIRCd附带的配置脚本：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install perl<br>sudo apt-<span class="hljs-builtin-name">get</span> install g++<br></code></pre></td></tr></table></figure>
+
+<p>最后，我们需要确保已安装<em>make</em>：</p>
+<figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install make<br></code></pre></td></tr></table></figure>
+
+
+
+<h5 id="2-下载源"><a href="#2-下载源" class="headerlink" title="2.下载源"></a>2.下载源</h5><p>可以从以下<a target="_blank" rel="noopener" href="https://github.com/inspircd/inspircd/releases/latest">网址</a>下载最新版本的InspIRCd：<a target="_blank" rel="noopener" href="https://github.com/inspircd/inspircd/releases/latest">https</a>：<a target="_blank" rel="noopener" href="https://github.com/inspircd/inspircd/releases/latest">//github.com/inspircd/inspircd/releases/latest</a></p>
+<p>由于我们要从源代码构建最新版本，因此需要使用浏览器或命令行获取<em>tar.gz</em>存档。以版本<code>2.0.25</code>为例，您可以使用以下命令下载存档：</p>
+<figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">wget https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/inspircd/i</span>nspircd<span class="hljs-regexp">/archive/</span>v2.<span class="hljs-number">0.25</span>.tar.gz<br></code></pre></td></tr></table></figure>
+
+<p>使用<em>tar</em>提取下载内容：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">tar</span> xvf ./v<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">25</span>.tar.gz<br></code></pre></td></tr></table></figure>
+
+<h5 id="3-构建配置"><a href="#3-构建配置" class="headerlink" title="3.构建配置"></a>3.构建配置</h5><p>下载并提取源代码后，我们现在可以配置InspIRCd的构建方式。</p>
+<p>首先，输入安装目录：</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">cd</span> inspircd-<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">25</span><br></code></pre></td></tr></table></figure>
+
+<p>上面的版本号需要与您下载的版本相对应。</p>
+<p>要开始配置安装，请输入以下内容：</p>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli">perl <span class="hljs-string">./configure</span><br></code></pre></td></tr></table></figure>
+
+<p>现在，您会被问到一系列问题。如果不确定，请按<em>返回</em>键以默认值回答。</p>
+<p>最后一个问题将询问您是否要检查第三方模块的更新，您应该回答<code>y</code>“是”。</p>
+<p>最终输出应类似于以下内容：</p>
+<figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs gams">Ok, <span class="hljs-number">144</span> modules.<br>Writing inspircd_config.h<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> GNUmakefile ...<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> BSDmakefile ...<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> inspircd ...<br>Writing cache <span class="hljs-keyword">file</span> <span class="hljs-keyword">for</span> future ./configures ...<br><br><br>To build your server with these settings, please run <span class="hljs-string">&#x27;make&#x27;</span> now.<br><span class="hljs-comment">*** Remember to edit your configuration files!!! ***</span><br></code></pre></td></tr></table></figure>
+
+<p>现在，我们可以继续<em>构建</em>步骤。</p>
+<h5 id="4-构建服务器"><a href="#4-构建服务器" class="headerlink" title="4.构建服务器"></a>4.构建服务器</h5><p>现在可以通过<code>make</code>在安装目录中执行来构建服务器。该过程大约需要10分钟，具体取决于您的系统速度，因此可以随时离开计算机。</p>
+<p>完成后，键入<code>make install</code>将可执行文件移动到先前配置的位置。完成后将输出此过程的概述：</p>
+<figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs gradle">*************************************<br>*       BUILDING INSPIRCD           *<br>*                                   *<br>*   <span class="hljs-keyword">This</span> will take a *<span class="hljs-keyword">long</span>* time.   *<br>*     Why not <span class="hljs-keyword">read</span> our wiki at      *<br>*     http:<span class="hljs-comment">//wiki.inspircd.org      *</span><br>*  <span class="hljs-keyword">while</span> you wait <span class="hljs-keyword">for</span> make to run?  *<br>*************************************<br><br>*************************************<br>*        INSTALL COMPLETE!          *<br>*************************************<br>Paths:<br>  Base install: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span>/run<br>  Configuration: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf<br>  Binaries: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>bin<br>  Modules: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/m</span>odules<br>  Data: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>data<br>To start the ircd, run: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/i</span>nspircd start<br>Remember to create your config <span class="hljs-keyword">file</span>: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf/inspircd.conf<br>Examples are available at: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf<span class="hljs-regexp">/examples/</span><br></code></pre></td></tr></table></figure>
+
+<p>完全安装InspIRCd后，我们可以配置服务器。</p>
+<h5 id="5-服务器配置"><a href="#5-服务器配置" class="headerlink" title="5.服务器配置"></a>5.服务器配置</h5><p>在构建目录中，创建一个名为的文本文件，<code>run/config/inspircd.conf</code>并插入以下内容：</p>
+<figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs clean">&lt;config format=<span class="hljs-string">&quot;xml&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;bindip&quot;</span> value=<span class="hljs-string">&quot;1.2.2.3&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;localips&quot;</span> value=<span class="hljs-string">&quot;&amp;bindip;/24&quot;</span>&gt;<br><br>####### SERVER CONFIGURATION #######<br><br>&lt;server<br>        name=<span class="hljs-string">&quot;SERVER_HOSTNAME/FQDN&quot;</span><br>        description=<span class="hljs-string">&quot;SERVER_DESCRIPTION&quot;</span><br>        id=<span class="hljs-string">&quot;SERVER_SID&quot;</span><br>        network=<span class="hljs-string">&quot;NETWORK_NAME&quot;</span>&gt;<br><br><br>####### ADMIN INFO #######<br><br>&lt;admin<br>       name=<span class="hljs-string">&quot;ADMIN_NAME&quot;</span><br>       nick=<span class="hljs-string">&quot;ADMIN_NICK&quot;</span><br>       email=<span class="hljs-string">&quot;ADMIN_EMAIL&quot;</span>&gt;<br><br>####### PORT CONFIGURATION #######<br><br>&lt;bind<br>      address=<span class="hljs-string">&quot;SERVER_IP&quot;</span><br>      port=<span class="hljs-string">&quot;SERVER_PORT&quot;</span><br>      type=<span class="hljs-string">&quot;SERVER_TYPE&quot;</span>&gt;<br></code></pre></td></tr></table></figure>
+
+<p>在上面的文本中更改以下值以反映您自己的配置：</p>
+<ul>
+<li><em>SERVER_HOSTNAME / FQDN</em>：服务器的主机名</li>
+<li><em>SERVER_DESCRIPTION</em>：您的服务器的描述</li>
+<li><em>SERVER_SID</em>：3个字符的唯一序列，第一个是数字（确保大写）</li>
+<li><em>NETWORK_NAME</em>：您的IRC网络的名称</li>
+<li><em>ADNIN_NAME</em>：IRC<em>管理员</em>名称</li>
+<li><em>ADMIN_NICK</em>：IRC<em>管理员</em>昵称</li>
+<li><em>ADMIN_EMAIL</em>：IRC<em>管理员</em>电子邮件</li>
+<li><em>SERVER_IP</em>：服务器的公共IP</li>
+<li><em>SERVER_PORT</em>：服务器端口（通常为6697）</li>
+<li><em>SERVER_TYPE</em>：客户端或服务器类型（客户端应在此处使用）</li>
+</ul>
+<p>现在，配置文件应如下所示：</p>
+<figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs clean">&lt;config format=<span class="hljs-string">&quot;xml&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;bindip&quot;</span> value=<span class="hljs-string">&quot;1.2.2.3&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;localips&quot;</span> value=<span class="hljs-string">&quot;&amp;bindip;/24&quot;</span>&gt;<br><br>####### SERVER CONFIGURATION #######<br><br>&lt;server<br>        name=<span class="hljs-string">&quot;tutorials.ubuntu.com&quot;</span><br>        description=<span class="hljs-string">&quot;Welcome to Ubuntu Tutorials&quot;</span><br>        id=<span class="hljs-string">&quot;97K&quot;</span><br>        network=<span class="hljs-string">&quot;tutorials.ubuntu.com&quot;</span>&gt;<br><br><br>####### ADMIN INFO #######<br><br>&lt;admin<br>       name=<span class="hljs-string">&quot;tutorial ubuntu&quot;</span><br>       nick=<span class="hljs-string">&quot;tutorial&quot;</span><br>       email=<span class="hljs-string">&quot;tutorials@ubuntu.com&quot;</span>&gt;<br><br>####### PORT CONFIGURATION #######<br><br>&lt;bind<br>      address=<span class="hljs-string">&quot;XX.XX.XX.XX&quot;</span><br>      port=<span class="hljs-string">&quot;6697&quot;</span><br>      type=<span class="hljs-string">&quot;clients&quot;</span>&gt;<br></code></pre></td></tr></table></figure>
+
+<p>确保保存更改！</p>
+<h5 id="6-运行服务器"><a href="#6-运行服务器" class="headerlink" title="6.运行服务器"></a>6.运行服务器</h5><p>现在该是第一次启动InspIRCd了！</p>
+<p>在终端窗口中，键入：</p>
+<figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli"><span class="hljs-string">./inspircd</span> start<br><span class="hljs-string">./inspircd</span> status<br></code></pre></td></tr></table></figure>
+
+<p>如果成功，您将看到以下输出：</p>
+<figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs applescript">InspIRCd <span class="hljs-keyword">is</span> <span class="hljs-built_in">running</span> (PID: <span class="hljs-number">13301</span>)<br></code></pre></td></tr></table></figure>
+
+<p>恭喜你！您的服务器现在在线！</p>
+<p>现在，任何能够访问您的服务器的IRC客户端都可以连接到IRC服务器。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Botnet/">Botnet</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Botnet/">Botnet</a>
+                    
+                      <a class="hover-with-bg" href="/tags/IRC/">IRC</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2021/02/01/10/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">DGA总结</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2020/12/14/1/">
+                        <span class="hidden-mobile">Iot-僵尸网络漏洞利用</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+              <!-- Comments -->
+              <article class="comments" id="comments">
+                
+                  
+                
+                
+
+              </article>
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;TOC</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+  <div class="statistics">
+    
+    
+
+    
+      
+        <!-- 不蒜子统计PV -->
+        <span id="busuanzi_container_site_pv" style="display: none">
+            总访问量 
+            <span id="busuanzi_value_site_pv"></span>
+             次
+          </span>
+      
+      
+        <!-- 不蒜子统计UV -->
+        <span id="busuanzi_container_site_uv" style="display: none">
+            总访客数 
+            <span id="busuanzi_value_site_uv"></span>
+             人
+          </span>
+      
+    
+  </div>
+
+
+  
+  <!-- 备案信息 -->
+  <div class="beian">
+    <span>
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="nofollow noopener">
+        京ICP证123456号
+      </a>
+    </span>
+    
+      
+        <span>
+          <a
+            href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=12345678"
+            rel="nofollow noopener"
+            class="beian-police"
+            target="_blank"
+          >
+            
+              <span style="visibility: hidden; width: 0">|</span>
+              <img src="/img/police_beian.png" srcset="/img/loading.gif" alt="police-icon"/>
+            
+            <span>京公网安备12345678号</span>
+          </a>
+        </span>
+      
+    
+  </div>
+
+
+  
+</footer>
+
+<!-- SCRIPTS -->
+
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/debouncer.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.0/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.0/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js" ></script>
+
+
+
+  <script defer src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.11/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+  <script>
+    (function () {
+      var path = "/local-search.xml";
+      $('#local-search-input').on('click', function() {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      });
+      $('#modalSearch').on('shown.bs.modal', function() {
+        $('#local-search-input').focus();
+      });
+    })()
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+
+</body>
+</html>

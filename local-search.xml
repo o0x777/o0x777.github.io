@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+  
+  <entry>
+    <title>DGA总结</title>
+    <link href="/2021/02/01/10/"/>
+    <url>/2021/02/01/10/</url>
+    
+    <content type="html"><![CDATA[<p>DGA算法用于恶意软件，对抗C2主机单一，DGA 的学习，自己总结过当时的样本，</p><ul><li><p>DGA种子</p></li><li><ul><li><p>种子（算法输入）</p></li><li><ul><li>基于时间相关的，固定字符串，十六进制编码，基于某些变量</li></ul></li><li><p>算法</p></li><li><ul><li>基于算术（该类型算法会生成一组可用ASCII编码表示的值，从而构成DGA域名，流行度最高。） 在奇安信实习的时候遇到过，分析过写过代码</li><li>基于哈希（用哈希值的16进制表示产生DGA域名，被使用的哈希算法常有：MD5，SHA256。） 在奇安信研究院实习的时候遇到过，MD5加密的，分析学过代码</li><li>基于词典（该方式会从专有词典中挑选单词进行组合，减少域名字符上的随机性，迷惑性更强，字典内嵌在恶意程序中或者从公有服务中提取。）</li><li>基于排列组合（根据种子和生成算法的不同，DGA域名可以选择不同种子类型和算法类型的组合方式，因此最终DGA域名的生成形式多样性高。）奇安信研究院实习，分析过写过</li></ul></li></ul></li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>DGA算法</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>IRC-Botnet</title>
+    <link href="/2020/12/24/2/"/>
+    <url>/2020/12/24/2/</url>
+    
+    <content type="html"><![CDATA[<h2 id="什么是IRC？"><a href="#什么是IRC？" class="headerlink" title="什么是IRC？"></a>什么是IRC？</h2><p>Internet中继聊天（IRC）是一种协议，用于创建可以使用IRC客户端连接的IRC“网络”IRC服务器集。网络通常是独立的。在网络内部，有许多渠道可以由用户加入。通常任何人都可以创建一个频道。通道通常以井号（<strong>＃</strong>）为前缀，有时包含多个井号以表示不同类型的通道。个人用户还可以使用私人消息私下聊天。许多Linode客户使用IRC获得技术帮助和交流知识。</p><a id="more"></a><p>官方的Linode信道是**#linode<strong>的OFTC网络（上</strong>irc.oftc.net**）。</p><p>在IRC上，用户按以下四个特征分类：</p><ul><li>昵称，用户选择的唯一字符串，显示为句柄。</li><li>用户名，是用户提供的昵称的单独字符串。不必是唯一的。</li><li>主机，用户连接的IP或主机名。</li><li>真实姓名，包含您姓名的可选参数（允许使用空格）</li></ul><p>用户通常表示为<code>nickname!username@host</code></p><p>典型的僵尸网络由僵尸服务器（通常是一台IRC服务器）和一个或更多的僵尸客户端组成。有成百上千的僵尸客户端组成的僵尸网络也仅仅可以被称作为小型僵尸网络。</p><p>IRC 命令:</p><p>PASS：设置IRC连接密码</p><p>USER：设置username,，hostname，realname</p><p>NICK：设置昵称</p><p>PING：验证客户端是否存活</p><p>MODE：设置IRC连接模式</p><p>JOIN：加入频道（频道就类似群的概念）</p><p>PRIVMSG：发送私有消息（最常用的IRC命令）</p><p>001：成功建立IRC连接后服务器返回的welcome消息 </p><p>443：昵称重复</p><p>首先我们说下IRC型僵尸网络：它是出现的最早、大数量存在的僵尸群。主要利用IRC协议构造命令与控制通道，容易创建。一个服务器可以很容易的创建和控制多台僵尸主机。那么，僵尸主机和C&amp;C服务器之间是怎么进行通信的呢？僵尸程序执行后，会解码内置的配置信息，获取C&amp;C服务器域名及端口，以此来建立三次握手连接，会通过发送固定前缀的NICK和USER命令，加入预定义频道后，僵尸程序会进入PINC/PONC状态等待接收指令。因此通过IRC协议对僵尸网络的控制是相对比较容易的。但也有不足之处，如果中央服务器被关闭，僵尸程序就会失去与C&amp;C服务器的通信，因此攻击也就不存在啦。</p><h5 id=""><a href="#" class="headerlink" title=""></a></h5><h5 id="1-依存关系"><a href="#1-依存关系" class="headerlink" title="1.依存关系"></a>1.依存关系</h5><p>第一步，我们将从<em>git</em>开始安装构建和运行InspIRCd所需的依赖项：</p><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install git<br></code></pre></td></tr></table></figure><p>接下来是<em>Perl，</em>因此我们可以运行InspIRCd附带的配置脚本：</p><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install perl<br>sudo apt-<span class="hljs-builtin-name">get</span> install g++<br></code></pre></td></tr></table></figure><p>最后，我们需要确保已安装<em>make</em>：</p><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs routeros">sudo apt-<span class="hljs-builtin-name">get</span> install make<br></code></pre></td></tr></table></figure><h5 id="2-下载源"><a href="#2-下载源" class="headerlink" title="2.下载源"></a>2.下载源</h5><p>可以从以下<a href="https://github.com/inspircd/inspircd/releases/latest">网址</a>下载最新版本的InspIRCd：<a href="https://github.com/inspircd/inspircd/releases/latest">https</a>：<a href="https://github.com/inspircd/inspircd/releases/latest">//github.com/inspircd/inspircd/releases/latest</a></p><p>由于我们要从源代码构建最新版本，因此需要使用浏览器或命令行获取<em>tar.gz</em>存档。以版本<code>2.0.25</code>为例，您可以使用以下命令下载存档：</p><figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs awk">wget https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/inspircd/i</span>nspircd<span class="hljs-regexp">/archive/</span>v2.<span class="hljs-number">0.25</span>.tar.gz<br></code></pre></td></tr></table></figure><p>使用<em>tar</em>提取下载内容：</p><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">tar</span> xvf ./v<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">25</span>.tar.gz<br></code></pre></td></tr></table></figure><h5 id="3-构建配置"><a href="#3-构建配置" class="headerlink" title="3.构建配置"></a>3.构建配置</h5><p>下载并提取源代码后，我们现在可以配置InspIRCd的构建方式。</p><p>首先，输入安装目录：</p><figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs apache"><span class="hljs-attribute">cd</span> inspircd-<span class="hljs-number">2</span>.<span class="hljs-number">0</span>.<span class="hljs-number">25</span><br></code></pre></td></tr></table></figure><p>上面的版本号需要与您下载的版本相对应。</p><p>要开始配置安装，请输入以下内容：</p><figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli">perl <span class="hljs-string">./configure</span><br></code></pre></td></tr></table></figure><p>现在，您会被问到一系列问题。如果不确定，请按<em>返回</em>键以默认值回答。</p><p>最后一个问题将询问您是否要检查第三方模块的更新，您应该回答<code>y</code>“是”。</p><p>最终输出应类似于以下内容：</p><figure class="highlight gams"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs gams">Ok, <span class="hljs-number">144</span> modules.<br>Writing inspircd_config.h<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> GNUmakefile ...<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> BSDmakefile ...<br><span class="hljs-function"><span class="hljs-title">Writing</span></span> inspircd ...<br>Writing cache <span class="hljs-keyword">file</span> <span class="hljs-keyword">for</span> future ./configures ...<br><br><br>To build your server with these settings, please run <span class="hljs-string">&#x27;make&#x27;</span> now.<br><span class="hljs-comment">*** Remember to edit your configuration files!!! ***</span><br></code></pre></td></tr></table></figure><p>现在，我们可以继续<em>构建</em>步骤。</p><h5 id="4-构建服务器"><a href="#4-构建服务器" class="headerlink" title="4.构建服务器"></a>4.构建服务器</h5><p>现在可以通过<code>make</code>在安装目录中执行来构建服务器。该过程大约需要10分钟，具体取决于您的系统速度，因此可以随时离开计算机。</p><p>完成后，键入<code>make install</code>将可执行文件移动到先前配置的位置。完成后将输出此过程的概述：</p><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs gradle">*************************************<br>*       BUILDING INSPIRCD           *<br>*                                   *<br>*   <span class="hljs-keyword">This</span> will take a *<span class="hljs-keyword">long</span>* time.   *<br>*     Why not <span class="hljs-keyword">read</span> our wiki at      *<br>*     http:<span class="hljs-comment">//wiki.inspircd.org      *</span><br>*  <span class="hljs-keyword">while</span> you wait <span class="hljs-keyword">for</span> make to run?  *<br>*************************************<br><br>*************************************<br>*        INSTALL COMPLETE!          *<br>*************************************<br>Paths:<br>  Base install: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span>/run<br>  Configuration: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf<br>  Binaries: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>bin<br>  Modules: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/m</span>odules<br>  Data: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>data<br>To start the ircd, run: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/i</span>nspircd start<br>Remember to create your config <span class="hljs-keyword">file</span>: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf/inspircd.conf<br>Examples are available at: <span class="hljs-regexp">/home/</span>javier<span class="hljs-regexp">/build/i</span>nspircd-<span class="hljs-number">2.0</span>.<span class="hljs-number">25</span><span class="hljs-regexp">/run/</span>conf<span class="hljs-regexp">/examples/</span><br></code></pre></td></tr></table></figure><p>完全安装InspIRCd后，我们可以配置服务器。</p><h5 id="5-服务器配置"><a href="#5-服务器配置" class="headerlink" title="5.服务器配置"></a>5.服务器配置</h5><p>在构建目录中，创建一个名为的文本文件，<code>run/config/inspircd.conf</code>并插入以下内容：</p><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs clean">&lt;config format=<span class="hljs-string">&quot;xml&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;bindip&quot;</span> value=<span class="hljs-string">&quot;1.2.2.3&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;localips&quot;</span> value=<span class="hljs-string">&quot;&amp;bindip;/24&quot;</span>&gt;<br><br>####### SERVER CONFIGURATION #######<br><br>&lt;server<br>        name=<span class="hljs-string">&quot;SERVER_HOSTNAME/FQDN&quot;</span><br>        description=<span class="hljs-string">&quot;SERVER_DESCRIPTION&quot;</span><br>        id=<span class="hljs-string">&quot;SERVER_SID&quot;</span><br>        network=<span class="hljs-string">&quot;NETWORK_NAME&quot;</span>&gt;<br><br><br>####### ADMIN INFO #######<br><br>&lt;admin<br>       name=<span class="hljs-string">&quot;ADMIN_NAME&quot;</span><br>       nick=<span class="hljs-string">&quot;ADMIN_NICK&quot;</span><br>       email=<span class="hljs-string">&quot;ADMIN_EMAIL&quot;</span>&gt;<br><br>####### PORT CONFIGURATION #######<br><br>&lt;bind<br>      address=<span class="hljs-string">&quot;SERVER_IP&quot;</span><br>      port=<span class="hljs-string">&quot;SERVER_PORT&quot;</span><br>      type=<span class="hljs-string">&quot;SERVER_TYPE&quot;</span>&gt;<br></code></pre></td></tr></table></figure><p>在上面的文本中更改以下值以反映您自己的配置：</p><ul><li><em>SERVER_HOSTNAME / FQDN</em>：服务器的主机名</li><li><em>SERVER_DESCRIPTION</em>：您的服务器的描述</li><li><em>SERVER_SID</em>：3个字符的唯一序列，第一个是数字（确保大写）</li><li><em>NETWORK_NAME</em>：您的IRC网络的名称</li><li><em>ADNIN_NAME</em>：IRC<em>管理员</em>名称</li><li><em>ADMIN_NICK</em>：IRC<em>管理员</em>昵称</li><li><em>ADMIN_EMAIL</em>：IRC<em>管理员</em>电子邮件</li><li><em>SERVER_IP</em>：服务器的公共IP</li><li><em>SERVER_PORT</em>：服务器端口（通常为6697）</li><li><em>SERVER_TYPE</em>：客户端或服务器类型（客户端应在此处使用）</li></ul><p>现在，配置文件应如下所示：</p><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs clean">&lt;config format=<span class="hljs-string">&quot;xml&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;bindip&quot;</span> value=<span class="hljs-string">&quot;1.2.2.3&quot;</span>&gt;<br>&lt;define name=<span class="hljs-string">&quot;localips&quot;</span> value=<span class="hljs-string">&quot;&amp;bindip;/24&quot;</span>&gt;<br><br>####### SERVER CONFIGURATION #######<br><br>&lt;server<br>        name=<span class="hljs-string">&quot;tutorials.ubuntu.com&quot;</span><br>        description=<span class="hljs-string">&quot;Welcome to Ubuntu Tutorials&quot;</span><br>        id=<span class="hljs-string">&quot;97K&quot;</span><br>        network=<span class="hljs-string">&quot;tutorials.ubuntu.com&quot;</span>&gt;<br><br><br>####### ADMIN INFO #######<br><br>&lt;admin<br>       name=<span class="hljs-string">&quot;tutorial ubuntu&quot;</span><br>       nick=<span class="hljs-string">&quot;tutorial&quot;</span><br>       email=<span class="hljs-string">&quot;tutorials@ubuntu.com&quot;</span>&gt;<br><br>####### PORT CONFIGURATION #######<br><br>&lt;bind<br>      address=<span class="hljs-string">&quot;XX.XX.XX.XX&quot;</span><br>      port=<span class="hljs-string">&quot;6697&quot;</span><br>      type=<span class="hljs-string">&quot;clients&quot;</span>&gt;<br></code></pre></td></tr></table></figure><p>确保保存更改！</p><h5 id="6-运行服务器"><a href="#6-运行服务器" class="headerlink" title="6.运行服务器"></a>6.运行服务器</h5><p>现在该是第一次启动InspIRCd了！</p><p>在终端窗口中，键入：</p><figure class="highlight jboss-cli"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs jboss-cli"><span class="hljs-string">./inspircd</span> start<br><span class="hljs-string">./inspircd</span> status<br></code></pre></td></tr></table></figure><p>如果成功，您将看到以下输出：</p><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs applescript">InspIRCd <span class="hljs-keyword">is</span> <span class="hljs-built_in">running</span> (PID: <span class="hljs-number">13301</span>)<br></code></pre></td></tr></table></figure><p>恭喜你！您的服务器现在在线！</p><p>现在，任何能够访问您的服务器的IRC客户端都可以连接到IRC服务器。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Botnet</tag>
+      
+      <tag>IRC</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Iot-僵尸网络漏洞利用</title>
+    <link href="/2020/12/14/1/"/>
+    <url>/2020/12/14/1/</url>
+    
+    <content type="html"><![CDATA[<p><strong>IOT僵尸网络的传播方式：</strong></p><a id="more"></a><p><strong>Botnet常规模型：</strong></p><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951182768-0ac5909a-b526-43d7-9b5e-f538c0b0c0ed.png" alt="image.png" style="zoom: 50%;" /><p><strong>初始入侵</strong>：如通过RCE漏洞、SSH爆破、Redis未授权访问等打入服务器(IOT设备中通过远程命令注入等漏洞控制设备)。</p><p><strong>载荷投递</strong>：server被攻陷之后，会执行黑客预定的命令从Script Server下载恶意脚本/文件并执行，如此一个正常的Server就有了botnet的功能。</p><p><strong>中控通信</strong>：被感染的服务器会连接黑客的”中控服务器(Control &amp; Command Server)”进行上线，并接收指令（P2P暂不考虑）。</p><p><strong>蠕虫传播</strong>：宿主机被感染后所植入的恶意文件会自带一些攻击模块，并自动开始对内网/公网机器发起蠕虫攻击，感染更多的服务器成为botnet的一部分。</p><p><strong>攻击</strong>：黑客或通过中控批量对botnet的节点下发指令，对某一目标发起DDoS攻击。</p><hr><p>​    在以上几个阶段中，比较有难度应该是第一步，漏洞攻陷。攻击者想要获取IOT设备，通常使用的方法有两种，弱口令爆破和利用漏洞传播。下面是几种漏洞利用方式：</p><h6 id="Bot利用Apache2-上运行PHP漏洞。"><a href="#Bot利用Apache2-上运行PHP漏洞。" class="headerlink" title="Bot利用Apache2 上运行PHP漏洞。"></a>Bot利用Apache2 上运行PHP漏洞。</h6><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951801208-0fa98fbf-1f99-46f0-90f3-a6d3fe848949.png" style=" zoom: 50%;" /><h6 id="Bot尝试利用Apache2上运行PHP框架漏洞远程执行命。"><a href="#Bot尝试利用Apache2上运行PHP框架漏洞远程执行命。" class="headerlink" title="Bot尝试利用Apache2上运行PHP框架漏洞远程执行命。"></a>Bot尝试利用Apache2上运行PHP框架漏洞远程执行命。</h6><h6 id=""><a href="#" class="headerlink" title=""></a><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951531823-80621278-fd05-4d59-9791-b39ee0123c1d.png" style="zoom: 50%;" /></h6><h6 id="Bot尝试利用运行Realtek路由器，照相机或摄像机的漏洞。"><a href="#Bot尝试利用运行Realtek路由器，照相机或摄像机的漏洞。" class="headerlink" title="Bot尝试利用运行Realtek路由器，照相机或摄像机的漏洞。"></a>Bot尝试利用运行Realtek路由器，照相机或摄像机的漏洞。</h6><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951603107-4bac9c39-9f63-4e02-8a3b-5e80ac8ad294.png" style="zoom: 50%;" /><h6 id="Bot尝试在运行Cisco-Linksys路由器的主机上利用漏洞。"><a href="#Bot尝试在运行Cisco-Linksys路由器的主机上利用漏洞。" class="headerlink" title="Bot尝试在运行Cisco Linksys路由器的主机上利用漏洞。"></a>Bot尝试在运行Cisco Linksys路由器的主机上利用漏洞。</h6><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951629030-d336d819-96c8-4e13-8f36-332922ed6fa4.png" style="zoom:50%;" /><h6 id="Bot尝试利用华为路由器漏洞。"><a href="#Bot尝试利用华为路由器漏洞。" class="headerlink" title="Bot尝试利用华为路由器漏洞。"></a>Bot尝试利用华为路由器漏洞。</h6><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951677295-d6631a9c-7d2a-4558-90b7-3934633a9362.png" style="zoom:50%;" /><h6 id="IOT方面的僵尸网络更多的是进行DDOS攻击，如图所示"><a href="#IOT方面的僵尸网络更多的是进行DDOS攻击，如图所示" class="headerlink" title="IOT方面的僵尸网络更多的是进行DDOS攻击，如图所示:"></a>IOT方面的僵尸网络更多的是进行DDOS攻击，如图所示:</h6><img src="https://0x777.oss-cn-beijing.aliyuncs.com/img/1607951711675-72e6936b-ea4a-45f7-ad89-7315437c9665.png" style="zoom:50%;" />]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Botnet</tag>
+      
+      <tag>漏洞利用</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Fbot 简要分析</title>
+    <link href="/2020/12/10/3/"/>
+    <url>/2020/12/10/3/</url>
+    
+    <content type="html"><![CDATA[<h2 id="Fbot样本分析"><a href="#Fbot样本分析" class="headerlink" title="Fbot样本分析"></a>Fbot样本分析</h2><a id="more"></a><h3 id="样本信息："><a href="#样本信息：" class="headerlink" title="样本信息："></a>样本信息：</h3><table><thead><tr><th align="left"><strong>MD5</strong></th><th>beab327053b17556e80338efdf0b2e19</th></tr></thead><tbody><tr><td align="left"><strong>SHA-256</strong></td><td><strong>bc13292b82a7109d014cd175f4b74b5de79422890a0601fe2b9408aa38a729ec</strong></td></tr><tr><td align="left"><strong>Vhash</strong></td><td><strong>0dcd973b0b0a373e78f6183b81cf9d68</strong></td></tr><tr><td align="left"><strong>Magic</strong></td><td><strong>ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV),  statically linked, stripped</strong></td></tr></tbody></table><h3 id="样本背景"><a href="#样本背景" class="headerlink" title="样本背景"></a>样本背景</h3><p> <strong>Fbot是类Satori的Mirai变异相关僵尸网络，在Fbot上出现新的混淆技术和异于常规Mirai的攻击方式。Satori是基于Mirai改造的，在扫描模块，不是使用传统的扫描器来搜索易被攻击的路由器，而是使用两个特定的端口37215和52869的零日漏洞，来发起攻击。Fbot和Satori有密切的联系，具有相似的攻击方式，在某些样本中具有相同的C2主机。Fbot内置了XOR加密和替换密码的特殊组合，这种新的混淆技术，在其他家族中还没有使用过该替。对于其攻击方式，该Fbot样本使用的数据不存在样本中，而是从C2服务器中接受命令和控制的，主要攻击目标是华为旗下的路由器产品。</strong> </p><h3 id="样本感染流程"><a href="#样本感染流程" class="headerlink" title="样本感染流程:"></a>样本感染流程:</h3>  <img src="Fbot/clip_image002.png" alt="img" style="zoom: 50%;" /><h3 id="样本分析"><a href="#样本分析" class="headerlink" title="样本分析:"></a><strong>样本分析:</strong></h3><p><strong>Fbot样本运行后,会内存中申请空间,并初始化几个特征值,供后续重要函数使用,如图所示</strong></p> <img src="Fbot/clip_image004.png" alt="img" style="zoom:50%;" /><p><strong>之后Fbot进行网络连通检查,根据0x804E244,0x804E248,0x804E24C,0x804E250的值,进行移位和异或操作,选择DNS进行网络的连通性测试。</strong></p> <img src="Fbot/clip_image006.png" alt="img" style="zoom:50%;" /><p><strong>利用时间函数和PID生成特定值,并赋值给0x804E244,0x804E248,0x804E24C,0x804E250</strong> </p><p><strong>然后进行table解码.现时解密出密钥和替换密码表,然后再利用密钥和替换密码表进行解码,具体过程如下图所所示:</strong> </p> <img src="Fbot/clip_image008.png" alt="img" style="zoom:50%;" /><p><strong>利用时间函数和PID进行赋值</strong> </p> <img src="Fbot/clip_image010.png" alt="img" style="zoom:50%;" /><p><strong>内置硬编码通过0x59异或得到密钥和密码表，再利用密钥和密码表进行解密硬编码.如图所示:</strong> </p> <img src="Fbot/clip_image012.png" alt="img" style="zoom:50%;" /><p><strong>解密后的结果如下:</strong> </p> <img src="Fbot/clip_im11014.png" alt="img" style="zoom:50%;" /><p><strong>Fbot   在经过table解密后，进行ReadLink函数调用。之后样本会删除自身文件，然后在同目录下创建一个文本文件，内容为空。之后会在命令行输出“test”用来表示程序运行成功。</strong> </p><p><strong>如图所示：</strong> </p> <img src="Fbot/clip_im22216.png" alt="img" style="zoom:50%;" /><p><strong>之后调用会对0x804E244,0x804E248,0x804E24C,0x804E250进行两次异或运算，开启守护进程使得样本不断尝试与C2连接。进行DNS ohyaya.raiseyourdongers.pw解析析出C2主机的IP地址。</strong> </p>  <img src="Fbot/111m2018.png" alt="img" style="zoom:50%;" /><p><strong>以后会不断对DNS   查询的结果进行解析，当返回了IP地址后，就会进行后续操作。注意的是fbot样本的数据都要从C2   主句获取，包括弱口令和漏洞利用方式。从而发起HTTP   攻击。</strong> </p> <img src="IRC-僵尸网络/clip_image020.png" alt="img" style="zoom:50%;" /> <img src="IRC-僵尸网络/clip_image022.png" alt="img" style="zoom:50%;" /><p><strong>值得注意的是，字符串的最后两行是与正在进行的扫描事件相关的字符串。其中“ GET / HTTP / 1.0”用于扫描，而“ uc-httpd 1.0.0”是目标功能。在MIRAI-SYN-SCAN的支持下，一旦找到合格的目标，目标地址信息（IP：PORT）将被报告给核心加载程序（Reporter）。</strong></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Fbot</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>基于IRC的僵尸网络</title>
+    <link href="/2020/12/10/5/"/>
+    <url>/2020/12/10/5/</url>
+    
+    <content type="html"><![CDATA[<p>​    </p><p>​    首先我们说下IRC型僵尸网络：它是出现的最早、大数量存在的僵尸群。主要利用IRC协议构造命令与控制通道，容易创建。一个服务器可以很容易的创建和控制多台僵尸主机。</p><p>​    </p><a id="more"></a><p>​        僵尸主机和C&amp;C服务器之间是怎么进行通信的呢？僵尸程序执行后，会解码内置的配置信息，获取C&amp;C服务器域名及端口，以此来建立三次握手连接，会通过发送固定前缀的NICK和USER命令，加入预定义频道后，僵尸程序会进入PINC/PONC状态等待接收指令。</p><p>​        因此通过IRC协议对僵尸网络的控制是相对比较容易的。但也有不足之处，如果中央服务器被关闭，僵尸程序就会失去与C&amp;C服务器的通信，因此攻击也就不存在啦。</p><h4 id="IRC-模型："><a href="#IRC-模型：" class="headerlink" title="IRC 模型："></a>IRC 模型：</h4> <img src="IRC-僵尸网络/IRC.jpg" alt="IRC" style="zoom: 50%;" /><h4 id="僵尸网络通信IRC命令："><a href="#僵尸网络通信IRC命令：" class="headerlink" title="僵尸网络通信IRC命令："></a>僵尸网络通信IRC命令：</h4><figure class="highlight dos"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs dos">PASS：设置IRC连接密码<br><br>USER：设置username,，hostname，realname<br><br>NICK：设置昵称<br><br><span class="hljs-built_in">PING</span>：验证客户端是否存活<br><br><span class="hljs-built_in">MODE</span>：设置IRC连接模式<br><br>JOIN：加入频道（频道就类似群的概念）<br><br>PRIVMSG：发送私有消息（最常用的IRC命令）<br><br><span class="hljs-number">001</span>：成功建立IRC连接后服务器返回的welcome消息 <br><br><span class="hljs-number">443</span>：昵称重复<br></code></pre></td></tr></table></figure>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Botnet</tag>
+      
+      <tag>IRC</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>鲁米诗歌分享</title>
+    <link href="/2020/12/07/8/"/>
+    <url>/2020/12/07/8/</url>
+    
+    <content type="html"><![CDATA[<p><strong>你生而有翼，为何喜欢爬行？</strong></p><a id="more"></a><p><img src="%E8%AF%97%E6%AD%8C%E9%89%B4%E8%B5%8F/1.png" alt="图一"></p><p><strong>昨天的我聪明，</strong></p><p><strong>想去改变这个世界。</strong></p><p><strong>今天的我智慧，</strong></p><p><strong>正在改变自我。</strong></p><p><img src="%E8%AF%97%E6%AD%8C%E9%89%B4%E8%B5%8F/2.png" alt="图二"></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>诗歌鉴赏</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>诗歌鉴赏</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>总结list</title>
+    <link href="/2020/12/06/6/"/>
+    <url>/2020/12/06/6/</url>
+    
+    <content type="html"><![CDATA[<ul><li><input disabled="" type="checkbox"> botnet相关的总结</li><li><input disabled="" type="checkbox"> 蜜罐的相关总结</li><li><input disabled="" type="checkbox"> Mozi</li><li><input disabled="" type="checkbox"> fbot</li><li><input disabled="" type="checkbox"> moobot</li><li><input disabled="" type="checkbox"> gafgyt</li><li><input disabled="" type="checkbox"> scapy 函数库</li><li><input disabled="" type="checkbox"> 通信协议(IRC协议，P2P协议，DHT协议)</li><li><input disabled="" type="checkbox"> 工具的分析</li><li><input disabled="" type="checkbox"> upx脱壳分析</li><li><input disabled="" type="checkbox"> DGA相关的分析</li><li><input disabled="" type="checkbox"> RC4加密算法</li><li><input disabled="" type="checkbox"> docker/docker-compose/kako</li><li><input disabled="" type="checkbox"> DDOS攻击下的详细分析</li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+      <category>Mirai</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Botnet</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Hello World</title>
+    <link href="/2020/11/30/4/"/>
+    <url>/2020/11/30/4/</url>
+    
+    <content type="html"><![CDATA[<a id="more"></a>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Hello World</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Mirai 僵尸网络分析</title>
+    <link href="/2020/11/30/7/"/>
+    <url>/2020/11/30/7/</url>
+    
+    <content type="html"><![CDATA[<p>Mirai 僵尸网络分析:</p><a id="more"></a><p><a href="https://wenku.baidu.com/view/29c48f1cbdd126fff705cc1755270722192e59d8.html?fr=search-1-wk_sea_fufei_income3#">https://wenku.baidu.com/view/29c48f1cbdd126fff705cc1755270722192e59d8.html?fr=search-1-wk_sea_fufei_income3#</a></p><p>关于ELF 文main函数和启动例程:</p><p>汇编程序的入口是 _start ,而C程序的入口是main函数，汇编和链接步骤是： </p><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs css"><span class="hljs-selector-tag">as</span> <span class="hljs-selector-tag">hello</span><span class="hljs-selector-class">.s</span> <span class="hljs-selector-tag">-o</span> <span class="hljs-selector-tag">hello</span><span class="hljs-selector-class">.o</span><br><span class="hljs-selector-tag">ld</span> <span class="hljs-selector-tag">hello</span><span class="hljs-selector-class">.s</span> <span class="hljs-selector-tag">-o</span> <span class="hljs-selector-tag">hello</span><br></code></pre></td></tr></table></figure><p><img src="https://cdn.nlark.com/yuque/0/2020/png/1169482/1603848612421-54ba7dac-638a-40cb-a275-468725382635.png" alt="image.png"></p><figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs css">编译一个程序：<br><span class="hljs-selector-tag">gcc</span> <span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.c</span> <span class="hljs-selector-tag">-o</span> <span class="hljs-selector-tag">main</span><br>相当于分为三步：<br><span class="hljs-selector-tag">gcc</span> <span class="hljs-selector-tag">-S</span> <span class="hljs-selector-tag">mian</span><span class="hljs-selector-class">.c</span>   #第一步把<span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.c</span>生成汇编代码<span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.s</span><br><span class="hljs-selector-tag">gcc</span> <span class="hljs-selector-tag">-c</span> <span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.s</span>   #第二步把<span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.s</span>生成目标文件<span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.o</span><br><span class="hljs-selector-tag">gcc</span> <span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.o</span>      #第三步把<span class="hljs-selector-tag">main</span><span class="hljs-selector-class">.o</span>生成可执行文件<span class="hljs-selector-tag">main</span><br></code></pre></td></tr></table></figure><p>如果目标文件是由C代码编译生成的，用gcc做链接就没错了，整个程序的入口点是crt1.o中提供的_start，它首先做一些初始化工作（以下称为启动例程， Startup Routine），然后调用C代码中提供的main函数。所以，以前我们说main函数是程序的入口点其实不准确，_start才是真正的入口点，而main函数是被_start调用的。</p><p><strong>编译原理</strong></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Botnet</category>
+      
+      <category>Mirai</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Mirai</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>笃行</title>
+    <link href="/2020/11/30/9/"/>
+    <url>/2020/11/30/9/</url>
+    
+    <content type="html"><![CDATA[<p>TK的一条微博，分享了腾讯玄武实验室内部例会的一则PPT，讲的是个人成长。觉得讲得很好，在这里总结一下。</p><a id="more"></a><hr><h2 id="个人成长"><a href="#个人成长" class="headerlink" title="个人成长"></a>个人成长</h2><p><strong>确立个人方向，结合工作内容，找出对应短板</strong></p><ul><li>​        该领域主要专家们的工作是否都了解？</li><li>​        相关网络协议、文件格式是否都熟悉？</li><li>​        相关的技术和主要工具是否看过、用过？</li></ul><p><strong>阅读只是学习过程的起点，不能止于阅读</strong></p><ul><li>​        工具的每个参数每个菜单都要看、要试</li><li>​        学习网络协议要实际抓包分析、学习文件格式要读代码实现</li><li>​        学习老漏洞一定要调试，搞懂别人代码每一个字节的意义，之后一定要完全自己重写一个Exploit</li><li>​        细节、细节、细节，刨根问底</li></ul><h2 id="建立学习参考目标"><a href="#建立学习参考目标" class="headerlink" title="建立学习参考目标"></a>建立学习参考目标</h2><p><strong>短期参考：比自己优秀的同龄人</strong></p><ul><li>​        阅读他们的文章和其他工作成果，从细节中观察他们的学习方式和工作方式</li></ul><p><strong>中期参考：相同方向上的业内专家</strong></p><ul><li>​        了解他们的成长轨迹，跟踪他们关注的内容</li></ul><p><strong>长期参考：业内老牌企业和先锋企业</strong></p><ul><li>​        把握行业发展、技术趋势，为未来做积累</li></ul><h2 id="推荐的学习方式"><a href="#推荐的学习方式" class="headerlink" title="推荐的学习方式"></a>推荐的学习方式</h2><p><strong>以工具为线索</strong></p><ol><li><p>​    Kali Linux</p></li><li><p>​    以Metasploit为例：</p><p>​        遍历每个子目录，除了Exploit里面还有什么？</p><p>​        每个工具分别有什么功能？原理是什么？涉及哪些知识？</p><p>​        能否改进优化？能否发展、组合出新的功能？</p></li></ol><p><strong>以专家为线索</strong></p><ol><li>你的技术方向里有哪些专家？</li><li>他们的邮箱、主页、社交网络账号是什么？</li><li>他们在该方向上有哪些作品？发表过哪些演讲？</li></ol><h2 id="处理好学习、工作和生活"><a href="#处理好学习、工作和生活" class="headerlink" title="处理好学习、工作和生活"></a>处理好学习、工作和生活</h2><ol><li>学习、工作和生活是矛盾统一的</li><li>三者都需要时间，你一天只有24个小时</li><li>调和矛盾的关键：提高效率</li></ol><p><strong>对于一个没有好爸爸的人来说，学习、工作决定你能不能追求远方</strong></p><h2 id="如何提高效率"><a href="#如何提高效率" class="headerlink" title="如何提高效率"></a>如何提高效率</h2><ul><li>做好预研，收集相关前人成果，避免无谓的重复劳动</li><li>在可行性判断阶段，能找到工具就不写代码，能用脚本语言写就不用编译语言，把完美主义放在最终实现阶段</li><li>做好笔记并定期整理，遗忘会让所有的投入都白白浪费</li><li>多和同事交流，别人说一个工具的名字可能让你节约数小时</li><li>咖啡可以提高思维效率，而且合法</li><li><strong>无论怎么提高效率，要成为专家，都需要大量的时间投入</strong></li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>杂记</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>学习</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  
+</search>
