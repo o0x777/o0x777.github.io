@@ -17,7 +17,12 @@
   
   <meta name="theme-color" content="#2f4154">
   
-    <meta name="description" content="">
+    <meta name="description" content="
+1.DGA的是什么，为什么会出现
+2.DGA的分类
+3.DGA在恶意软件中的应用
+4.如何预防检测DGA
+">
   
   <meta name="author" content="0x777">
   <meta name="keywords" content="">
@@ -250,7 +255,7 @@
 <p>3.DGA在恶意软件中的应用</p>
 <p>4.如何预防检测DGA</p>
 </blockquote>
- <!---->
+<a id="more"></a>
 
 <h3 id="1-DGA简介"><a href="#1-DGA简介" class="headerlink" title="1.DGA简介"></a>1.DGA简介</h3><p>DGA（Domain Generation Algorithm）域名生成算法。对于恶意软件的通信来说，传统的单一C2服务器IP ，很容易被安全研究人员发现。为了提高恶意软件的C2服务器的上线率，以及提高安全研究人员研究难度，出现了以DGA算法为特征的大量恶意样本。从数学的角度来阐释DGA算法，就是 Y = F(X) 。x 是输入变量，Y是生成的域名，Y 和 X 之间存在着某种函数（生成算法）关系。在恶意样本中，只需内置一个X ，利用算法生成大量线性关系的 Y 。攻击者只需要注册 Y里面的一个域名，就可以保证 C2服务器有被攻击者上线 ，当然攻击者灵活变换域名和IP，从而使得安全研究人员很难发现。 </p>
 <h3 id="2-DGA域名分类"><a href="#2-DGA域名分类" class="headerlink" title="2.DGA域名分类"></a>2.DGA域名分类</h3><p>根据上述数学关系，DGA算法由两部分决定，第一部分是输入的X ，我们这里称为种子，另一部分是函数关系式，我们称为生成算法。</p>
