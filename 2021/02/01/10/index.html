@@ -201,7 +201,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      37 字
+      795 字
     </span>
   
 
@@ -211,7 +211,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      1
+      9
        分钟
     </span>
   
@@ -244,70 +244,115 @@
             <h1 style="display: none">DGA总结</h1>
             
             <div class="markdown-body">
-              <figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs css">1<span class="hljs-selector-class">.DGA</span>的是什么，为什么会出现 &lt;!<span class="hljs-selector-tag">----more</span>&gt;<br>2<span class="hljs-selector-class">.DGA</span>的分类<br>3<span class="hljs-selector-class">.DGA</span>在恶意软件中的应用<br>4.如何预防检测<span class="hljs-selector-tag">DGA</span><br></code></pre></td></tr></table></figure>
+              <blockquote>
+<p>1.DGA的是什么，为什么会出现</p>
+<p>2.DGA的分类</p>
+<p>3.DGA在恶意软件中的应用</p>
+<p>4.如何预防检测DGA</p>
+</blockquote>
+ <!---->
 
-<!----more>
+<h3 id="1-DGA简介"><a href="#1-DGA简介" class="headerlink" title="1.DGA简介"></a>1.DGA简介</h3><p>DGA（Domain Generation Algorithm）域名生成算法。对于恶意软件的通信来说，传统的单一C2服务器IP ，很容易被安全研究人员发现。为了提高恶意软件的C2服务器的上线率，以及提高安全研究人员研究难度，出现了以DGA算法为特征的大量恶意样本。从数学的角度来阐释DGA算法，就是 Y = F(X) 。x 是输入变量，Y是生成的域名，Y 和 X 之间存在着某种函数（生成算法）关系。在恶意样本中，只需内置一个X ，利用算法生成大量线性关系的 Y 。攻击者只需要注册 Y里面的一个域名，就可以保证 C2服务器有被攻击者上线 ，当然攻击者灵活变换域名和IP，从而使得安全研究人员很难发现。 </p>
+<h3 id="2-DGA域名分类"><a href="#2-DGA域名分类" class="headerlink" title="2.DGA域名分类"></a>2.DGA域名分类</h3><p>根据上述数学关系，DGA算法由两部分决定，第一部分是输入的X ，我们这里称为种子，另一部分是函数关系式，我们称为生成算法。</p>
+<h4 id="1-种子是由两大因素决定的。"><a href="#1-种子是由两大因素决定的。" class="headerlink" title="1.种子是由两大因素决定的。"></a>1.种子是由两大因素决定的。</h4><ol>
+<li><p>基于时间的种子<strong>（Time dependence）</strong>。利用系统时间作为作为种子，比如当天时间。</p>
+</li>
+<li><p>是否具有确定性<strong>（Determinism）</strong>。是否是固定变量，还是随机的变量组成的。</p>
+</li>
+</ol>
+<p>所以种子的分为4类：</p>
+<p><strong>1.TID（time-independent and deterministic）</strong>，与时间不相关，可确定；</p>
+<p><strong>2.TDD（time-dependent and deterministic）</strong>，与时间相关，可确定；</p>
+<p><strong>3.TDN（time-dependent and non-deterministic）</strong>，与时间相关，不可确定；</p>
+<p><strong>4.TIN（time-independent and non-deterministic</strong>），与时间不相关，不可确定；</p>
+<h4 id="2-生成算法进行分类"><a href="#2-生成算法进行分类" class="headerlink" title="2.生成算法进行分类"></a>2.生成算法进行分类</h4><ol>
+<li><p><strong>基于算术。</strong>该类型算法会生成一组可用ASCII编码表示的值，从而构成DGA域名，流行度最高。</p>
+</li>
+<li><p><strong>基于哈希</strong>。用哈希值的16进制表示产生DGA域名，被使用的哈希算法常有：MD5，SHA256。</p>
+</li>
+<li><p><strong>基于词典</strong>。该方式会从专有词典中挑选单词进行组合，减少域名字符上的随机性，迷惑性更强，字典内嵌在恶意程序中或者从公有服务中提取。</p>
+</li>
+<li><p><strong>基于排列组合</strong>。对一个初始域名进行字符上的排列组合。</p>
+</li>
+</ol>
+<h3 id="3-常见的DGA家族"><a href="#3-常见的DGA家族" class="headerlink" title="3. 常见的DGA家族"></a>3. 常见的DGA家族</h3><table>
+<thead>
+<tr>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#bamital">bamital</a></th>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#banjori">banjori</a></th>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#bigviktor">bigviktor</a></th>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#blackhole">blackhole</a></th>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#ccleaner">ccleaner</a></th>
+<th><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#chinad">chinad</a></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#conficker">conficker</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#cryptolocker">cryptolocker</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#dircrypt">dircrypt</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#dyre">dyre</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#emotet">emotet</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#enviserv">enviserv</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#feodo">feodo</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#fobber">fobber</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#gameover">gameover</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#gspy">gspy</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#locky">locky</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#madmax">madmax</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#matsnu">matsnu</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#mirai">mirai</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#murofet">murofet</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#mydoom">mydoom</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#necro">necro</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#necurs">necurs</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#ngioweb">ngioweb</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#nymaim">nymaim</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#omexo">omexo</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#padcrypt">padcrypt</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#proslikefan">proslikefan</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#pykspa">pykspa</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#qadars">qadars</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#ramnit">ramnit</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#ranbyus">ranbyus</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#rovnix">rovnix</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#shifu">shifu</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#shiotob">shiotob</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#simda">simda</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#suppobox">suppobox</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#symmi">symmi</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#tempedreve">tempedreve</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#tinba">tinba</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#tinynuke">tinynuke</a></td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#tofsee">tofsee</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#vawtrak">vawtrak</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#vidro">vidro</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#virut">virut</a></td>
+<td><a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/#xshellghost">xshellghost</a></td>
+<td></td>
+</tr>
+</tbody></table>
+<p>对于家族的详细信息，tld、sld、time dependent 以及例子，参考：<a target="_blank" rel="noopener" href="https://data.netlab.360.com/dga/"><code>https://data.netlab.360.com/dga/</code></a></p>
+<p>对于部分家族的生成算法代码，可参考 <a target="_blank" rel="noopener" href="https://github.com/baderj/domain_generation_algorithms"><code>https://github.com/baderj/domain_generation_algorithms</code></a></p>
+<h3 id="4-对于DGA家族的检测方法："><a href="#4-对于DGA家族的检测方法：" class="headerlink" title="4.对于DGA家族的检测方法："></a>4.对于DGA家族的检测方法：</h3><ul>
+<li>SVC 和 LSTM 对正常域名和 DGA 域名进行了检测</li>
+<li>利用Keras二分类器和决策树Decision Tree对域名进行检测</li>
+<li>利用LSTM检测DGA</li>
+<li>基于机器学习与深度学习的DGA域名检测系统</li>
+</ul>
+<p>详细代码见 ： <a target="_blank" rel="noopener" href="https://github.com/o0x777/Data-Mining-for-Cybersecurity">https://github.com/o0x777/Data-Mining-for-Cybersecurity</a></p>
 
-### 1.DGA简介
-
-DGA（Domain Generation Algorithm）域名生成算法。对于恶意软件的通信来说，传统的单一C2服务器IP ，很容易被安全研究人员发现。为了提高恶意软件的C2服务器的上线率，以及提高安全研究人员研究难度，出现了以DGA算法为特征的大量恶意样本。从数学的角度来阐释DGA算法，就是 Y = F(X) 。x 是输入变量，Y是生成的域名，Y 和 X 之间存在着某种函数（生成算法）关系。在恶意样本中，只需内置一个X ，利用算法生成大量线性关系的 Y 。攻击者只需要注册 Y里面的一个域名，就可以保证 C2服务器有被攻击者上线 ，当然攻击者灵活变换域名和IP，从而使得安全研究人员很难发现。 
-
-### 2.DGA域名分类
-
-根据上述数学关系，DGA算法由两部分决定，第一部分是输入的X ，我们这里称为种子，另一部分是函数关系式，我们称为生成算法。
-
-#### 1.种子是由两大因素决定的。
-
-1. 基于时间的种子**（Time dependence）**。利用系统时间作为作为种子，比如当天时间。
-
-2. 是否具有确定性**（Determinism）**。是否是固定变量，还是随机的变量组成的。
-
-所以种子的分为4类：
-
-**1.TID（time-independent and deterministic）**，与时间不相关，可确定；
-
-**2.TDD（time-dependent and deterministic）**，与时间相关，可确定；
-
-**3.TDN（time-dependent and non-deterministic）**，与时间相关，不可确定；
-
-**4.TIN（time-independent and non-deterministic**），与时间不相关，不可确定；
-
-#### 2.生成算法进行分类
-
-1. **基于算术。**该类型算法会生成一组可用ASCII编码表示的值，从而构成DGA域名，流行度最高。
-
-2. **基于哈希**。用哈希值的16进制表示产生DGA域名，被使用的哈希算法常有：MD5，SHA256。
-
-3. **基于词典**。该方式会从专有词典中挑选单词进行组合，减少域名字符上的随机性，迷惑性更强，字典内嵌在恶意程序中或者从公有服务中提取。
-
-4. **基于排列组合**。对一个初始域名进行字符上的排列组合。
-
-### 3. 常见的DGA家族
-
-| [bamital](https://data.netlab.360.com/dga/#bamital)     | [banjori](https://data.netlab.360.com/dga/#banjori)          | [bigviktor](https://data.netlab.360.com/dga/#bigviktor) | [blackhole](https://data.netlab.360.com/dga/#blackhole)   | [ccleaner](https://data.netlab.360.com/dga/#ccleaner)       | [chinad](https://data.netlab.360.com/dga/#chinad)     |
-| ------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
-| [conficker](https://data.netlab.360.com/dga/#conficker) | [cryptolocker](https://data.netlab.360.com/dga/#cryptolocker) | [dircrypt](https://data.netlab.360.com/dga/#dircrypt)   | [dyre](https://data.netlab.360.com/dga/#dyre)             | [emotet](https://data.netlab.360.com/dga/#emotet)           | [enviserv](https://data.netlab.360.com/dga/#enviserv) |
-| [feodo](https://data.netlab.360.com/dga/#feodo)         | [fobber](https://data.netlab.360.com/dga/#fobber)            | [gameover](https://data.netlab.360.com/dga/#gameover)   | [gspy](https://data.netlab.360.com/dga/#gspy)             | [locky](https://data.netlab.360.com/dga/#locky)             | [madmax](https://data.netlab.360.com/dga/#madmax)     |
-| [matsnu](https://data.netlab.360.com/dga/#matsnu)       | [mirai](https://data.netlab.360.com/dga/#mirai)              | [murofet](https://data.netlab.360.com/dga/#murofet)     | [mydoom](https://data.netlab.360.com/dga/#mydoom)         | [necro](https://data.netlab.360.com/dga/#necro)             | [necurs](https://data.netlab.360.com/dga/#necurs)     |
-| [ngioweb](https://data.netlab.360.com/dga/#ngioweb)     | [nymaim](https://data.netlab.360.com/dga/#nymaim)            | [omexo](https://data.netlab.360.com/dga/#omexo)         | [padcrypt](https://data.netlab.360.com/dga/#padcrypt)     | [proslikefan](https://data.netlab.360.com/dga/#proslikefan) | [pykspa](https://data.netlab.360.com/dga/#pykspa)     |
-| [qadars](https://data.netlab.360.com/dga/#qadars)       | [ramnit](https://data.netlab.360.com/dga/#ramnit)            | [ranbyus](https://data.netlab.360.com/dga/#ranbyus)     | [rovnix](https://data.netlab.360.com/dga/#rovnix)         | [shifu](https://data.netlab.360.com/dga/#shifu)             | [shiotob](https://data.netlab.360.com/dga/#shiotob)   |
-| [simda](https://data.netlab.360.com/dga/#simda)         | [suppobox](https://data.netlab.360.com/dga/#suppobox)        | [symmi](https://data.netlab.360.com/dga/#symmi)         | [tempedreve](https://data.netlab.360.com/dga/#tempedreve) | [tinba](https://data.netlab.360.com/dga/#tinba)             | [tinynuke](https://data.netlab.360.com/dga/#tinynuke) |
-| [tofsee](https://data.netlab.360.com/dga/#tofsee)       | [vawtrak](https://data.netlab.360.com/dga/#vawtrak)          | [vidro](https://data.netlab.360.com/dga/#vidro)         | [virut](https://data.netlab.360.com/dga/#virut)           | [xshellghost](https://data.netlab.360.com/dga/#xshellghost) |                                                       |
-
-
-
-对于家族的详细信息，tld、sld、time dependent 以及例子，参考：[`https://data.netlab.360.com/dga/`](https://data.netlab.360.com/dga/)
-
-对于部分家族的生成算法代码，可参考 [`https://github.com/baderj/domain_generation_algorithms`](https://github.com/baderj/domain_generation_algorithms)
-
-### 4.对于DGA家族的检测方法：
-
-- SVC 和 LSTM 对正常域名和 DGA 域名进行了检测
-- 利用Keras二分类器和决策树Decision Tree对域名进行检测
-- 利用LSTM检测DGA
-- 基于机器学习与深度学习的DGA域名检测系统
-
-详细代码见 ： https://github.com/o0x777/Data-Mining-for-Cybersecurity
             </div>
             <hr>
             <div>
