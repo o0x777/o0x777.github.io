@@ -4,6 +4,31 @@
   
   
   <entry>
+    <title>一些学习网站</title>
+    <link href="/2021/03/30/%E4%B8%80%E4%BA%9B%E5%AD%A6%E4%B9%A0%E7%BD%91%E7%AB%99/"/>
+    <url>/2021/03/30/%E4%B8%80%E4%BA%9B%E5%AD%A6%E4%B9%A0%E7%BD%91%E7%AB%99/</url>
+    
+    <content type="html"><![CDATA[<blockquote><p><strong>个人学习过程中总结的一些网站：</strong></p><p>**<br>**</p><ul><li>Botnet相关</li><li>威胁情报平台</li><li>空间探测平台</li><li>经典黑客组织大会</li><li>其他</li></ul></blockquote><hr><!---more---><h3 id="Botnet："><a href="#Botnet：" class="headerlink" title="Botnet："></a>Botnet：</h3><p>360 netlab：<a href="https://blog.netlab.360.com/"><code>https://blog.netlab.360.com/</code></a></p><p>Cisco ：<a href="https://blog.talosintelligence.com/">https://blog.talosintelligence.com/</a></p><p>VT 网站 :  <a href="https://blog.virustotal.com/">https://blog.virustotal.com/</a></p><p>Url 样本数据库：<a href="https://urlhaus.abuse.ch/browse/">https://urlhaus.abuse.ch/browse/</a></p><p>Unitt32(经常会披露一些细节)：<a href="https://unit42.paloaltonetworks.com/(%E5%86%85%E5%90%AB%E4%B8%80%E4%BA%9BTools)">https://unit42.paloaltonetworks.com/(内含一些Tools)</a></p><p>Twitter：</p><p>Threat-research: <a href="https://www.fortinet.com/blog/">https://www.fortinet.com/blog/</a></p><h3 id="威胁情报平台"><a href="#威胁情报平台" class="headerlink" title="威胁情报平台"></a>威胁情报平台</h3><ul><li> <a href="https://www.virustotal.com/gui/home">VT</a></li><li><a href="https://any.run/">any.run 超强沙箱</a></li><li><a href="https://ti.360.cn/#/homepage">360威胁情报中心</a></li><li><a href="https://ata.360.cn/detection">360云沙箱</a></li><li><a href="https://s.threatbook.cn/">微步云沙箱</a></li><li><a href="https://sandbox.ti.qianxin.com/sandbox/page">QAX文件分析平台</a></li><li><a href="https://ti.qianxin.com/">QAX威胁分析平台</a></li><li><a href="https://analyze.intezer.com/">intezer analyze</a></li><li><a href="https://s.tencent.com/research/">腾讯安全平台</a></li><li><a href="https://data.websaas.cn/dsc/index">安恒安全数据大脑</a></li><li><a href="https://www.venuseye.com.cn/">venuseye(启明星辰威胁情报平台)</a></li><li><a href="https://blog.talosintelligence.com/">CISCO威胁情报平台</a></li></ul><h3 id="空间探测平台："><a href="#空间探测平台：" class="headerlink" title="空间探测平台："></a>空间探测平台：</h3><ul><li><a href="https://www.zoomeye.org/">Zoomeye</a></li><li><a href="https://quake.360.cn/quake/#/index">360QUAKE</a></li><li><a href="https://www.shodan.io/">shodan</a></li><li><a href="https://fofa.so/">FOFA</a></li><li><a href="https://otx.alienvault.com/browse/global?include_inactive=0&sort=-modified&page=1&indicatorsSearch=">外星人实验室(恶意扫描集合)</a></li></ul><h3 id="经典黑客组织大会："><a href="#经典黑客组织大会：" class="headerlink" title="经典黑客组织大会："></a>经典黑客组织大会：</h3><p>黑帽：<a href="https://www.blackhat.com/tr-21/">https://www.blackhat.com/tr-21/</a></p><p>Botnet：<a href="https://www.botconf.eu/">https://www.botconf.eu/</a></p><h3 id="学习网站："><a href="#学习网站：" class="headerlink" title="学习网站："></a>学习网站：</h3><p>Hacking8：<a href="https://i.hacking8.com/">https://i.hacking8.com/</a></p><p>看雪：<a href="https://www.kanxue.com/">https://www.kanxue.com/</a></p><p>吾爱破解：<a href="https://www.52pojie.cn/">https://www.52pojie.cn/</a></p><p>安全客：<a href="https://www.anquanke.com/">https://www.anquanke.com/</a></p><p>知道创宇：<a href="https://paper.seebug.org/">https://paper.seebug.org/</a></p><p>阿里云先知：<a href="https://xz.aliyun.com/">https://xz.aliyun.com/</a></p><p>绿盟：<a href="http://blog.nsfocus.net/category/security-research/">http://blog.nsfocus.net/category/security-research/</a></p><p>乌云档案：<a href="http://drops.xmd5.com/">http://drops.xmd5.com/</a></p><p>腾讯绿盟专栏：<a href="https://cloud.tencent.com/developer/column/83592">https://cloud.tencent.com/developer/column/83592</a></p><p>腾讯安全应急响应中心： <a href="https://security.tencent.com/index.php/blog">https://security.tencent.com/index.php/blog</a></p><p>美团技术博客：<a href="https://tech.meituan.com/">https://tech.meituan.com/</a></p><p>木师傅：<a href="https://o0xmuhe.github.io/">https://o0xmuhe.github.io/</a></p>]]></content>
+    
+    
+    <categories>
+      
+      <category>恶意软件</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>学习</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>恶意软件分析大集合</title>
     <link href="/2021/03/30/%E6%81%B6%E6%84%8F%E8%BD%AF%E4%BB%B6%E5%88%86%E6%9E%90%E5%A4%A7%E9%9B%86%E5%90%88/"/>
     <url>/2021/03/30/%E6%81%B6%E6%84%8F%E8%BD%AF%E4%BB%B6%E5%88%86%E6%9E%90%E5%A4%A7%E9%9B%86%E5%90%88/</url>
