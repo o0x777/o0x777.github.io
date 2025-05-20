@@ -13,32 +13,32 @@
 <meta property="og:site_name" content="0x777">
 <meta property="og:description" content="本文全面梳理了 Botnet 僵尸网络的组成结构、攻击模式、捕获分析与反制路径，适用于安全研究者、情报分析员和系统工程师。  Necro家族分析报告总结： 背景： ​    Necro僵尸网络2021年1月份首次被360netlab披露,自披露以后消匿了一段时间,最近又开始活跃.该家族是用python编写完成的。作者是N3Cr0m0rPh(Necromorph)，版本更新快，目前分为四个版本更替">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201702608.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201832024-7657254.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201958876.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202217150-7657338.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201702608-7713613.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201832024-7657254-7713624.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201958876.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202217150-7657338.png">
 <meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202238475-7657359-7657360-7657361-7657362.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202412678-7657454-7657455-7657456.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202457023.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202510354-7657511.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202519291.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202544336.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202602056.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202628316.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202929380.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202937554.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519203030293.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519204149884.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205153174.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205236280.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205443562.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205509298.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205519440.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205536115-7659337.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205602921.png">
-<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205621652.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202412678-7657454-7657455-7657456.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202457023.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202510354-7657511.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202519291.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202544336.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202602056.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202628316.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202929380.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202937554.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519203030293.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519204149884.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205153174.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205236280.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205443562.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205509298.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205519440.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205536115-7659337.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205602921.png">
+<meta property="og:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205621652.png">
 <meta property="article:published_time" content="2021-04-23T13:40:00.000Z">
-<meta property="article:modified_time" content="2025-05-20T02:42:57.799Z">
+<meta property="article:modified_time" content="2025-05-20T04:01:56.142Z">
 <meta property="article:author" content="John Doe">
 <meta property="article:tag" content="僵尸网络">
 <meta property="article:tag" content="安全分析">
@@ -46,7 +46,7 @@
 <meta property="article:tag" content="DDoS">
 <meta property="article:tag" content="样本分析">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201702608.png">
+<meta name="twitter:image" content="http://0x777.me/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201702608-7713613.png">
     
     
       
@@ -189,24 +189,24 @@
 </blockquote>
 <p><strong>Necro家族分析报告总结：</strong></p>
 <p><strong>背景：</strong></p>
-<p>​    Necro僵尸网络2021年1月份首次被360netlab披露,自披露以后消匿了一段时间,最近又开始活跃.该家族是用python编写完成的。作者是N3Cr0m0rPh(Necromorph)，版本更新快，目前分为四个版本更替。截至到2021.3.18日，样本中内置了最新的漏洞进行攻击传播。我们根据样本出现的时间把样本分为四个版本。目前分析的4个版本都是基于V8魔改后的版本,V8之前的代码如下图所示：<img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201702608.png" alt="image-20250519201702608"></p>
+<p>​    Necro僵尸网络2021年1月份首次被360netlab披露,自披露以后消匿了一段时间,最近又开始活跃.该家族是用python编写完成的。作者是N3Cr0m0rPh(Necromorph)，版本更新快，目前分为四个版本更替。截至到2021.3.18日，样本中内置了最新的漏洞进行攻击传播。我们根据样本出现的时间把样本分为四个版本。目前分析的4个版本都是基于V8魔改后的版本,V8之前的代码如下图所示：<img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201702608-7713613.png" alt="image-20250519201702608"></p>
 <p>第一个版本是单纯的Bot，利用IRC 协议进行C2 通信，内置了ddos攻击指令，downloaed，Reapacked，shell，arp嗅探等命令。<br>第二版本增加了弱口令爆破和CVE漏洞利用，来实现传播扩展，代码对抗方面做了简单的混淆。<br>第三版在之前基础上，IRC通信增加了SSL验证，内置了8种以上的最新漏洞利用进行传播。利<br>用DGA来生成C2域名以及进行严重的代码混淆来对抗检测。<br>第四版,在域名方面引入了Tor代理和”DGA+随机域名”结合的方式进行C2 通信。除此之外<br>,前三个版本均是针对linux,在第四版中,新增了针对windows的感染传播和持久化控制方式，js挂马功能主要目的是在Web页面嵌入挖矿代码，这意味着当终端用户使用手机、PC或是其它设备浏览失陷设备（包括服务器和NAS设备）的相关Web页面时，可能沦为矿机并泄露敏感信息。</p>
 <p><strong>样本分析:</strong></p>
 <p><strong>第一版</strong></p>
 <p><strong>样本流程图：</strong></p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201832024-7657254.png" alt="image-20250519201832024"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201832024-7657254-7713624.png" alt="image-20250519201832024"></p>
 <p><strong>样本的主要功能：</strong></p>
 <ol>
 <li><p>IRC 服务的初始化</p>
 <p>样本首先随机生成8-12个随机字符串作为自己的nick_name的一部分，用于标识自己的唯一性。然后进行base64解码，service_ip，port，channel，channel_key。并开启一个新的线程去做ARP投毒和流量<br>嗅探。如图1所示</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519201958876.png" alt="image-20250519201958876"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519201958876.png" alt="image-20250519201958876"></p>
 </li>
 </ol>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">样本的上线 使用IRC 协议：</span><br><span class="line">irc server：45.145.185.229：6667</span><br><span class="line">channel：  #necro</span><br><span class="line">channel_key：m0rph</span><br><span class="line">nick_name：&quot;[HAX|&quot;+platform.machine()+&quot;|&quot;+str(multiprocessing.cpu_())+&quot;]&quot;+str(self.Randonchar)</span><br></pre></td></tr></table></figure>
 
 <ol start="2">
 <li><p>对函数名称进行重命名，轻度混淆。如图2所示：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202217150-7657338.png" alt="image-20250519202217150"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202217150-7657338.png" alt="image-20250519202217150"></p>
 </li>
 <li><p>持久化控制，文件写入启动项，把自己拷贝到&#x2F;etc目录下。如图3所示：</p>
 </li>
@@ -216,31 +216,31 @@
 <li><p>加入IRC服务器，接收等待接受指令，进行操作</p>
 <ol>
 <li><p>加入IRC 服务器，如图4所示：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202412678-7657454-7657455-7657456.png" alt="image-20250519202412678"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202412678-7657454-7657455-7657456.png" alt="image-20250519202412678"></p>
 </li>
 <li><p>对来自IRC服务器的命令进行解析，并执行。ddos攻击命令如图5所示，bot命令如图6所示。支持的命令多达16种（其中包括DDOS攻击指令和其他命令执行），包括：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202457023.png" alt="image-20250519202457023"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202457023.png" alt="image-20250519202457023"></p>
 </li>
 </ol>
 </li>
 </ol>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202510354-7657511.png" alt="image-20250519202510354"></p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202519291.png" alt="image-20250519202519291"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202510354-7657511.png" alt="image-20250519202510354"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202519291.png" alt="image-20250519202519291"></p>
 <ol start="5">
 <li><p>样本中有ARP嗅探和 流量监听，监听 ﻿ 22，23，﻿﻿ 53，﻿﻿ 443，﻿﻿ 1337，﻿﻿ 6667，﻿﻿ 3721</p>
 <p>5﻿端口之外的其他端口流量，并上报给C2服务</p>
 <p>器，代码如图7所示：</p>
 </li>
 </ol>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202544336.png" alt="image-20250519202544336"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202544336.png" alt="image-20250519202544336"></p>
 <ol start="6">
 <li><p>样本进行自我删除。如图8所示：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202602056.png" alt="image-20250519202602056"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202602056.png" alt="image-20250519202602056"></p>
 </li>
 </ol>
 <p><strong>第二版</strong></p>
 <p><strong>样本流程图：</strong></p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202628316.png" alt="image-20250519202628316"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202628316.png" alt="image-20250519202628316"></p>
 <p><strong>样本新增功能：</strong></p>
 <ol>
 <li><p>IRC 服务器进行了更新：</p>
@@ -248,16 +248,16 @@
 </li>
 <li><p>新增自我传播功能。样本启动多个线程利用3个远程RCE漏洞进投递传播</p>
 <p>洞是2021年1月4日曝光）。部分代码如图9所示：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202929380.png" alt="image-20250519202929380">    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519202937554.png" alt="image-20250519202937554"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202929380.png" alt="image-20250519202929380">    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519202937554.png" alt="image-20250519202937554"></p>
 </li>
 </ol>
 <p>第三版：</p>
 <p>样本流程图：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519203030293.png" alt="image-20250519203030293"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519203030293.png" alt="image-20250519203030293"></p>
 <p><strong>样本新增功能模块：</strong></p>
 <ol>
 <li><p>在C2 服务行SSL校器方面，第三版使用了动态DGA算法生成，种子是﻿ 0x4FE6DA﻿。同时对加入IRC服务进验。这大大加强了对C2服务器对服务器的保护。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">def gen_random_str(bmKdhIqSwVo):</span><br><span class="line">	return</span><br><span class="line">&#x27;&#x27;</span><br><span class="line">.join(random.choice(&quot;abcdefghijklmnopqoasadihcouvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;) for _ in range(bmKdhIqSwVo))</span><br><span class="line">def DGA_gen_cc(count):</span><br><span class="line">	random.seed(a=0x4FE6DA+count)</span><br><span class="line">	return gen_random_str(16)+&quot;.xyz&quot;</span><br><span class="line">for count in range(0, 4096):</span><br><span class="line">	Service_name=DGA_gen_cc(count)</span><br><span class="line">	print Service_name</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">def gen_random_str(bmKdhIqSwVo):</span><br><span class="line">	return</span><br><span class="line">&#x27;&#x27;.join(random.choice(&quot;abcdefghijklmnopqoasadihcouvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;) for _ in range(bmKdhIqSwVo))</span><br><span class="line">def DGA_gen_cc(count):</span><br><span class="line">	random.seed(a=0x4FE6DA+count)</span><br><span class="line">	return gen_random_str(16)+&quot;.xyz&quot;</span><br><span class="line">for count in range(0, 4096):</span><br><span class="line">	Service_name=DGA_gen_cc(count)</span><br><span class="line">	print Service_name</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>代码混淆方面。第三版的样本被进行重度混淆，对于函数名使用ast﻿随机重命名，字符串参数进行zlib.compress﻿压缩过。</p>
 </li>
@@ -277,18 +277,18 @@
 </li>
 </ul>
 <ol start="4">
-<li>控制命令方面。新增了reflect，addport，delport，injectcount，reinject等命令。其中的reinject命令，会进行JS挂马，在Web页面嵌入挖矿代码，这意味着当终端用户使用手机、PC或是其它设备浏览失陷设备（包括服务器和NAS设备）的相关Web页面时，可能沦为矿机并泄露敏感信息。如图10所示：    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519204149884.png" alt="image-20250519204149884"></li>
+<li>控制命令方面。新增了reflect，addport，delport，injectcount，reinject等命令。其中的reinject命令，会进行JS挂马，在Web页面嵌入挖矿代码，这意味着当终端用户使用手机、PC或是其它设备浏览失陷设备（包括服务器和NAS设备）的相关Web页面时，可能沦为矿机并泄露敏感信息。如图10所示：    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519204149884.png" alt="image-20250519204149884"></li>
 </ol>
 <p>第四版：</p>
 <p>样本新增功能：</p>
 <ol>
 <li>C2服务器方面。对于域名的对抗继续加强，使用了NO-IP.COM动态域的DGA域名。使用Tor** 硬编码代理进行通信。如图11所示：</li>
 </ol>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205153174.png" alt="image-20250519205153174"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205153174.png" alt="image-20250519205153174"></p>
 <ol start="2">
 <li>针对Windows和linux两种系统。第四版中，新加入了针对windows端的一些列操作，包括将文件写入注册表以保证开机自启、windows** Rootkit注入（使用了github上的dll编写shellcode，实现注入，针对32位和64位均可实现），实现持久化控制。具体代码如图12所示：</li>
 </ol>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205236280.png" alt="image-20250519205236280"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205236280.png" alt="image-20250519205236280"></p>
 <ol start="3">
 <li><p>在漏洞利用方面。第四版持续新增漏洞利用方式，新增了传播方式。</p>
 <ul>
@@ -298,19 +298,19 @@
 </ul>
 </li>
 <li><p>控制命令方面。新增了Tor DDOS 攻击，如图13所示</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205443562.png" alt="image-20250519205443562"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205443562.png" alt="image-20250519205443562"></p>
 </li>
 </ol>
 <p><strong>相关溯源信息：</strong></p>
 <p>​    <strong>针对C</strong>2 <strong>上线的数目：</strong></p>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205509298.png" alt="image-20250519205509298"></p>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205519440.png" alt="image-20250519205519440"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205509298.png" alt="image-20250519205509298"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205519440.png" alt="image-20250519205519440"></p>
 <p>​    攻击流量包：</p>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205536115-7659337.png" alt="image-20250519205536115"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205536115-7659337.png" alt="image-20250519205536115"></p>
 <p>​    8种漏洞利用：</p>
-<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205602921.png" alt="image-20250519205602921"></p>
+<p>​    <img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205602921.png" alt="image-20250519205602921"></p>
 <p>​    IRC 聊天室相关信息：</p>
-<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C.assets/image-20250519205621652.png" alt="image-20250519205621652"></p>
+<p><img src="/Users/o0x777/Documents/0x777/blog/hexo_blog/source/_posts/Necro%E5%83%B5%E5%B0%B8%E7%BD%91%E7%BB%9C/image-20250519205621652.png" alt="image-20250519205621652"></p>
 <p><strong>参考资料：</strong></p>
 <ol>
 <li><p><a href="**https://mp.weixin.qq.com/s/D**30**y**0**qeicKnHmP**9**Kad-pmg**">绿盟科技</a></p>
