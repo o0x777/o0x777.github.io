@@ -10,6 +10,8 @@ export default defineConfig({
     format: 'directory',
   },
   integrations: [sitemap()],
+  // Hide Astro's floating dev toolbar in `npm run dev` (it never ships to production)
+  devToolbar: { enabled: false },
   markdown: {
     shikiConfig: {
       themes: { light: 'vitesse-light', dark: 'vitesse-black' },
