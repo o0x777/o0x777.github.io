@@ -1,24 +1,55 @@
 ---
 import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
 ---
 
-<Base title="404">
-  <section class="nf mono">
-    <p class="muted">$ curl -I {'<this page>'}</p>
-    <p class="code">HTTP/1.1 404 Not Found</p>
-    <p>这个页面不存在，或者已经被移走了。</p>
-    <p><a href="/">← 回到首页</a></p>
+<Base title="404 · 节点离线">
+  <section class="container nf">
+    <p class="code mono" aria-hidden="true">404</p>
+    <p class="eyebrow">ERR_CONNECTION_REFUSED</p>
+    <h1>这个节点已经离线。</h1>
+    <p class="sub">你要找的页面不存在，或已经被转移到别处。</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="/">返回首页 <span class="arrow">→</span></a>
+      <button class="btn btn-ghost" type="button" data-cmdk-open><Icon name="search" size={16} />搜索文章</button>
+    </div>
   </section>
 </Base>
 
 <style>
   .nf {
-    padding: 4rem 0;
-    font-size: 0.95rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: clamp(64px, 12vw, 140px);
+    text-align: center;
   }
   .code {
-    font-size: 1.5rem;
+    margin: 0 0 8px;
+    font-size: clamp(120px, 26vw, 260px);
     font-weight: 700;
-    color: var(--accent);
+    line-height: 0.9;
+    letter-spacing: -0.08em;
+    color: transparent;
+    background: linear-gradient(to bottom, var(--fg-3), transparent 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  h1 {
+    margin: 16px 0 8px;
+    font-size: clamp(26px, 4vw, 36px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin: 0;
+    color: var(--fg-2);
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
   }
 </style>

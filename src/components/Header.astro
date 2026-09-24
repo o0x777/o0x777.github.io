@@ -1,0 +1,366 @@
+---
+import Icon from './Icon.astro';
+import Mark from './Mark.astro';
+
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/', label: '文章' },
+  { href: '/archives/', label: '归档' },
+  { href: '/tags/', label: '标签' },
+  { href: '/about/', label: '关于' },
+];
+const isActive = (href: string) =>
+  href === '/' ? path === '/' || /^\/\d{4}\//.test(path) : path.startsWith(href);
+---
+
+<header class="site-header" data-header>
+  <div class="container bar">
+    <a class="brand" href="/" aria-label="0x777 首页">
+      <Mark size={20} />
+      <span class="wordmark">0x777</span>
+    </a>
+
+    <nav class="nav" aria-label="主导航">
+      {
+        nav.map((item) => (
+          <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="actions">
+      <button class="search-btn" type="button" data-cmdk-open aria-label="搜索（⌘K）">
+        <Icon name="search" size={16} />
+        <span class="label">搜索</span>
+        <span class="kbd" data-mod-key>⌘K</span>
+      </button>
+      <button class="icon-btn theme-toggle" type="button" data-theme-toggle aria-label="切换深色/浅色模式">
+        <Icon name="sun" size={17} class="i-sun" />
+        <Icon name="moon" size={16} class="i-moon" />
+      </button>
+      <button
+        class="icon-btn menu-btn"
+        type="button"
+        data-menu-toggle
+        aria-label="打开菜单"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+      >
+        <Icon name="menu" size={18} class="i-menu" />
+        <Icon name="close" size={18} class="i-close" />
+      </button>
+    </div>
+  </div>
+
+  <nav class="mobile-nav" id="mobile-nav" aria-label="移动端导航">
+    <div class="container">
+      {
+        nav.map((item, i) => (
+          <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} style={`--i:${i}`}>
+            <span class="mono idx">0{i + 1}</span>
+            {item.label}
+          </a>
+        ))
+      }
+    </div>
+  </nav>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]')!;
+
+  // Hairline + stronger glass once the page scrolls
+  const onScroll = () => header.toggleAttribute('data-scrolled', scrollY > 8);
+  onScroll();
+  addEventListener('scroll', onScroll, { passive: true });
+
+  // Show Ctrl+K instead of ⌘K off Apple platforms
+  if (!/Mac|iPhone|iPad/.test(navigator.platform)) {
+    document.querySelectorAll('[data-mod-key]').forEach((el) => (el.textContent = 'Ctrl K'));
+  }
+
+  // Theme toggle
+  const root = document.documentElement;
+  const isDark = () =>
+    root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const toggleTheme = () => {
+    const next = isDark() ? 'light' : 'dark';
+    const apply = () => {
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem('theme', next);
+      } catch {}
+    };
+    // Cross-fade the whole page when the browser supports it
+    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.startViewTransition(apply);
+    } else apply();
+  };
+  document.querySelectorAll('[data-theme-toggle]').forEach((b) => b.addEventListener('click', toggleTheme));
+  addEventListener('toggle-theme', toggleTheme);
+
+  // Mobile menu
+  const menuBtn = header.querySelector<HTMLButtonElement>('[data-menu-toggle]')!;
+  const setMenu = (open: boolean) => {
+    header.toggleAttribute('data-menu', open);
+    document.documentElement.style.overflow = open ? 'hidden' : '';
+    menuBtn.setAttribute('aria-expanded', String(open));
+    menuBtn.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
+  };
+  menuBtn.addEventListener('click', () => setMenu(!header.hasAttribute('data-menu')));
+  addEventListener('keydown', (e) => e.key === 'Escape' && setMenu(false));
+  matchMedia('(min-width: 721px)').addEventListener('change', () => setMenu(false));
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    view-transition-name: site-header;
+    border-bottom: 1px solid transparent;
+    transition:
+      border-color 0.3s,
+      background-color 0.3s;
+  }
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in oklab, var(--bg) 70%, transparent);
+    backdrop-filter: blur(14px) saturate(1.5);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .site-header[data-scrolled],
+  .site-header[data-menu] {
+    border-bottom-color: var(--line);
+  }
+  .site-header[data-scrolled]::before,
+  .site-header[data-menu]::before {
+    opacity: 1;
+  }
+
+  .bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    height: var(--header-h);
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: start;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .brand :global(.mark) {
+    transition: transform 0.5s var(--ease);
+  }
+  .brand:hover :global(.mark) {
+    transform: rotate(120deg);
+  }
+  .wordmark {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .nav {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--bg-elev) 50%, transparent);
+  }
+  .nav a {
+    padding: 5px 14px;
+    border-radius: 999px;
+    color: var(--fg-2);
+    font-size: 14px;
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+  .nav a:hover {
+    color: var(--fg);
+  }
+  .nav a[aria-current='page'] {
+    color: var(--fg);
+    background: var(--bg-hover);
+    box-shadow: 0 0 0 1px var(--line) inset;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .search-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 6px 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--fg-3);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .search-btn:hover {
+    color: var(--fg);
+    border-color: var(--line-strong);
+    background: var(--bg-hover);
+  }
+  .search-btn .label {
+    margin-right: 10px;
+  }
+
+  /* Theme icon swap */
+  .theme-toggle :global(svg) {
+    grid-area: 1 / 1;
+    transition:
+      transform 0.5s var(--ease),
+      opacity 0.3s;
+  }
+  .theme-toggle :global(.i-moon) {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
+  }
+  :global(:root[data-theme='dark']) .theme-toggle :global(.i-sun) {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.6);
+  }
+  :global(:root[data-theme='dark']) .theme-toggle :global(.i-moon) {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .theme-toggle :global(.i-sun) {
+      opacity: 0;
+      transform: rotate(90deg) scale(0.6);
+    }
+    :global(:root:not([data-theme='light'])) .theme-toggle :global(.i-moon) {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .menu-btn {
+    display: none;
+  }
+  .menu-btn :global(svg) {
+    grid-area: 1 / 1;
+    transition:
+      transform 0.3s var(--ease),
+      opacity 0.2s;
+  }
+  .menu-btn :global(.i-close) {
+    opacity: 0;
+    transform: rotate(-45deg);
+  }
+  [data-menu] .menu-btn :global(.i-menu) {
+    opacity: 0;
+    transform: rotate(45deg);
+  }
+  [data-menu] .menu-btn :global(.i-close) {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mobile-nav {
+    display: none;
+  }
+
+  @media (max-width: 720px) {
+    .bar {
+      grid-template-columns: 1fr auto;
+    }
+    .nav {
+      display: none;
+    }
+    .search-btn {
+      width: 36px;
+      padding: 0;
+      justify-content: center;
+    }
+    .search-btn .label,
+    .search-btn .kbd {
+      display: none;
+    }
+    .menu-btn {
+      display: inline-grid;
+    }
+
+    .mobile-nav {
+      display: block;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      height: calc(100dvh - var(--header-h));
+      background: var(--bg);
+      visibility: hidden;
+      opacity: 0;
+      transition:
+        opacity 0.25s,
+        visibility 0s 0.25s;
+    }
+    [data-menu] .mobile-nav {
+      visibility: visible;
+      opacity: 1;
+      transition: opacity 0.25s;
+    }
+    .mobile-nav .container {
+      display: flex;
+      flex-direction: column;
+      padding-top: 16px;
+    }
+    .mobile-nav a {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+      color: var(--fg);
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      opacity: 0;
+      transform: translateY(8px);
+      transition:
+        opacity 0.4s var(--ease),
+        transform 0.4s var(--ease);
+      transition-delay: calc(var(--i) * 40ms);
+    }
+    [data-menu] .mobile-nav a {
+      opacity: 1;
+      transform: none;
+    }
+    .mobile-nav a[aria-current='page'] {
+      color: var(--accent-text);
+    }
+    .mobile-nav .idx {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--fg-3);
+    }
+  }
+</style>

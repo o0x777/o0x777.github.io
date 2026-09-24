@@ -8,36 +8,117 @@ for (const post of posts) {
   for (const tag of post.data.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
 }
 const tags = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'));
+const max = Math.max(1, ...counts.values());
 ---
 
 <Base title="标签" description={`${tags.length} 个标签`}>
-  <h1 class="page-title">标签</h1>
-  <p class="muted">共 {tags.length} 个标签</p>
-  <ul class="tags cloud">
-    {
-      tags.map(([tag, n]) => (
-        <li>
-          <a class="tag" href={tagUrl(tag)}>
-            #{tag}
-            <span class="count">{n}</span>
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+  <div class="container">
+    <header class="page-head">
+      <p class="eyebrow"><span class="accent">/</span> Index</p>
+      <h1>标签</h1>
+      <p class="sub mono">{tags.length} 个标签 · {posts.length} 篇报告</p>
+    </header>
+
+    <ol class="hist">
+      {
+        tags.map(([tag, n], i) => (
+          <li>
+            <a href={tagUrl(tag)} data-spot>
+              <span class="rank mono">{String(i + 1).padStart(2, '0')}</span>
+              <span class="name">#{tag}</span>
+              <span class="bar" aria-hidden="true">
+                <span style={`--w:${(n / max) * 100}%`} />
+              </span>
+              <span class="n mono">{n} 篇</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
 </Base>
 
 <style>
-  .page-title {
-    margin: 2rem 0 0.25rem;
-    font-size: 2rem;
+  .hist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
   }
-  .cloud {
-    margin-top: 2rem;
-    gap: 0.6rem;
+  .hist a {
+    display: grid;
+    grid-template-columns: 48px minmax(120px, 240px) minmax(0, 1fr) 64px;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 16px;
+    margin: 0 -16px;
+    border-radius: 12px;
+    text-decoration: none;
   }
-  .cloud .tag {
-    font-size: 0.875rem;
-    padding: 0.5rem 0.8rem;
+  .hist li {
+    border-bottom: 1px solid var(--line);
+  }
+  .rank,
+  .n {
+    color: var(--fg-3);
+    font-size: 12.5px;
+  }
+  .n {
+    text-align: right;
+  }
+  .name {
+    font-size: 18px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .hist a:hover .name {
+    color: var(--accent-text);
+  }
+  .bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .bar span {
+    display: block;
+    width: var(--w);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--fg-3);
+    transform-origin: left;
+    animation: grow 1s var(--ease) both;
+    transition: background-color 0.2s;
+  }
+  .hist li:nth-child(2) .bar span {
+    animation-delay: 0.05s;
+  }
+  .hist li:nth-child(3) .bar span {
+    animation-delay: 0.1s;
+  }
+  .hist li:nth-child(4) .bar span {
+    animation-delay: 0.15s;
+  }
+  .hist li:nth-child(n + 5) .bar span {
+    animation-delay: 0.2s;
+  }
+  .hist a:hover .bar span {
+    background: var(--accent);
+  }
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @media (max-width: 640px) {
+    .hist a {
+      grid-template-columns: 32px minmax(0, 1fr) 56px;
+      gap: 12px;
+      margin: 0;
+      padding: 16px 0;
+    }
+    .bar {
+      display: none;
+    }
   }
 </style>

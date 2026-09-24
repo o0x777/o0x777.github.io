@@ -1,52 +1,352 @@
 ---
 import Base from '../layouts/Base.astro';
-import PostList from '../components/PostList.astro';
-import { SITE, getPosts } from '../lib/site';
+import HeroNetwork from '../components/HeroNetwork.astro';
+import PostRow from '../components/PostRow.astro';
+import Icon from '../components/Icon.astro';
+import { SITE, getPosts, reportIds } from '../lib/site';
 
 const posts = await getPosts();
+const ids = reportIds(posts);
 ---
 
 <Base>
   <section class="hero">
-    <p class="cmd mono"><span class="muted">$</span> whoami</p>
-    <h1>0x777</h1>
-    <p class="lead">
-      网络安全从业者。关注<strong>二进制安全</strong>、<strong>僵尸网络分析</strong>与<strong
-        >黑灰产溯源打击</strong
-      >，在这里记录样本分析、威胁追踪和一些思考。
+    <HeroNetwork />
+    <div class="hero-grid" aria-hidden="true"></div>
+
+    <div class="container hero-inner">
+      <p class="status mono">
+        <span class="dot" aria-hidden="true"></span>
+        <span>TRACKING</span>
+        <span class="sep" aria-hidden="true"></span>
+        <span data-net-stat>3 C2 · 0 NODES</span>
+      </p>
+
+      <h1 class="hero-title">
+        <span class="dim">{SITE.motto[0]}</span>
+        <span class="bright">追踪<em>暗影</em>。</span>
+      </h1>
+      <p class="hero-en">— {SITE.mottoEn}</p>
+
+      <p class="hero-lead">{SITE.lead}</p>
+
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#reports">阅读研究报告 <span class="arrow down">↓</span></a>
+        <a class="btn btn-ghost" href="/about/">关于我</a>
+      </div>
+    </div>
+
+    <p class="hero-hint mono" aria-hidden="true">
+      <span class="pointer-only">[ 模拟拓扑 · 移动光标以追踪 ]</span>
+      <span class="touch-only">[ 模拟拓扑 ]</span>
     </p>
-    <p class="motto mono">// {SITE.motto}</p>
   </section>
 
-  <h2 class="section-title">文章 · {posts.length}</h2>
-  <PostList posts={posts} />
+  <section class="container section" aria-labelledby="focus-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow"><span class="accent">01</span> — Focus</p>
+        <h2 id="focus-title">研究方向</h2>
+      </div>
+    </div>
+    <ul class="focus">
+      {
+        SITE.focus.map((f, i) => (
+          <li class="focus-card" data-spot>
+            <div class="focus-top">
+              <span class="focus-icon">
+                <Icon name={f.icon} size={20} />
+              </span>
+              <span class="mono focus-idx">0{i + 1}</span>
+            </div>
+            <h3>{f.title}</h3>
+            <p>{f.desc}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="container section" id="reports" aria-labelledby="reports-title">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow"><span class="accent">02</span> — Reports</p>
+        <h2 id="reports-title">研究报告 <span class="count mono">{posts.length}</span></h2>
+      </div>
+      <a class="link-arrow" href="/archives/">全部归档 <span>→</span></a>
+    </div>
+    <ul class="post-rows">
+      {
+        posts.map((post) => (
+          <li>
+            <PostRow post={post} id={ids.get(post.id)} />
+          </li>
+        ))
+      }
+    </ul>
+  </section>
 </Base>
 
 <style>
+  /* ---------- Hero ---------- */
   .hero {
-    padding: 2.5rem 0 0.5rem;
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: min(760px, calc(100svh - var(--header-h)));
+    margin-top: calc(var(--header-h) * -1);
+    padding: calc(var(--header-h) + 56px) 0 88px;
+    overflow: hidden;
   }
-  .cmd {
-    margin: 0 0 0.5rem;
-    font-size: 0.9rem;
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: center top;
+    -webkit-mask-image: radial-gradient(ellipse 60% 70% at 72% 45%, #000 10%, transparent 72%);
+    mask-image: radial-gradient(ellipse 60% 70% at 72% 45%, #000 10%, transparent 72%);
+    opacity: 0.7;
+  }
+  .hero-inner {
+    position: relative;
+    pointer-events: none;
+  }
+  .hero-inner a {
+    pointer-events: auto;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 30px;
+    margin: 0 0 32px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--bg-elev) 60%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--fg-2);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+  }
+  .status .dot {
+    position: relative;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .status .dot::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    animation: ping 2s var(--ease) infinite;
+  }
+  @keyframes ping {
+    from {
+      transform: scale(0.4);
+      opacity: 1;
+    }
+    to {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+  .status .sep {
+    width: 1px;
+    height: 12px;
+    background: var(--line-strong);
+  }
+
+  .hero-title {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-size: clamp(34px, 7.4vw, 84px);
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    text-wrap: nowrap;
+  }
+  .hero-title .dim {
+    color: var(--fg-3);
+  }
+  .hero-title em {
+    font-style: normal;
     color: var(--accent);
   }
-  h1 {
-    margin: 0 0 1rem;
-    font-family: var(--font-mono);
-    font-size: clamp(2.25rem, 7vw, 3.25rem);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
+  .hero-en {
+    margin: 20px 0 0;
+    font-family: var(--font-serif);
+    font-size: clamp(18px, 2vw, 22px);
+    font-style: italic;
+    color: var(--fg-3);
   }
-  .lead {
-    margin: 0 0 1rem;
-    max-width: 36rem;
-    font-size: 1.1rem;
-    color: var(--fg-soft);
+  .hero-lead {
+    max-width: 33em;
+    margin: 28px 0 0;
+    color: var(--fg-2);
+    font-size: clamp(16px, 1.6vw, 18px);
+    line-height: 1.8;
   }
-  .motto {
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 36px;
+  }
+
+  .hero-hint {
+    position: absolute;
+    right: var(--gutter);
+    bottom: 28px;
     margin: 0;
-    font-size: 0.85rem;
-    color: var(--muted);
+    color: var(--fg-3);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .touch-only {
+    display: none;
+  }
+  @media (hover: none) {
+    .pointer-only {
+      display: none;
+    }
+    .touch-only {
+      display: inline;
+    }
+  }
+
+  /* Hero entrance */
+  .hero-inner > * {
+    animation: rise 0.9s var(--ease) both;
+  }
+  .hero-inner > :nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .hero-inner > :nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .hero-inner > :nth-child(4) {
+    animation-delay: 0.18s;
+  }
+  .hero-inner > :nth-child(5) {
+    animation-delay: 0.24s;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(4px);
+    }
+  }
+
+  /* ---------- Sections ---------- */
+  .section {
+    padding-top: clamp(64px, 9vw, 112px);
+  }
+  .count {
+    margin-left: 6px;
+    color: var(--fg-3);
+    font-size: 0.6em;
+    font-weight: 400;
+    vertical-align: 0.35em;
+  }
+
+  .focus {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .focus-card {
+    padding: 28px 26px 30px;
+    background: var(--bg);
+    transition: background-color 0.3s;
+  }
+  .focus-card:hover {
+    background: color-mix(in oklab, var(--bg) 60%, var(--bg-elev));
+  }
+  .focus-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+  .focus-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    color: var(--fg-2);
+    transition:
+      color 0.3s,
+      border-color 0.3s;
+  }
+  .focus-card:hover .focus-icon {
+    color: var(--accent);
+    border-color: var(--accent-line);
+  }
+  .focus-idx {
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+  .focus-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .focus-card p {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+
+  @media (max-width: 1000px) {
+    .focus {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 720px) {
+    .hero {
+      min-height: auto;
+      padding-top: calc(var(--header-h) + 48px);
+      padding-bottom: 96px;
+    }
+    .hero-title {
+      text-wrap: wrap;
+    }
+    .hero-hint {
+      left: var(--gutter);
+      right: auto;
+    }
+    .focus-top {
+      margin-bottom: 24px;
+    }
+  }
+  @media (max-width: 520px) {
+    .focus {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 </style>

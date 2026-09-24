@@ -1,44 +1,57 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PostList from '../../components/PostList.astro';
-import { getPosts, type Post } from '../../lib/site';
+import PostRow from '../../components/PostRow.astro';
+import { getPosts, reportIds, type Post } from '../../lib/site';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
+  const ids = reportIds(posts);
   const tags = [...new Set(posts.flatMap((p) => p.data.tags))];
   return tags.map((tag) => ({
     params: { tag },
-    props: { tag, posts: posts.filter((p) => p.data.tags.includes(tag)) },
+    props: { tag, ids, posts: posts.filter((p) => p.data.tags.includes(tag)) },
   }));
 }
 
 interface Props {
   tag: string;
+  ids: Map<string, string>;
   posts: Post[];
 }
 
-const { tag, posts } = Astro.props;
+const { tag, ids, posts } = Astro.props;
 ---
 
-<Base title={`#${tag}`} description={`标签「${tag}」下的 ${posts.length} 篇文章`}>
-  <p class="back mono"><a href="/tags/">← 全部标签</a></p>
-  <h1 class="page-title mono">#{tag}</h1>
-  <p class="muted">{posts.length} 篇文章</p>
-  <PostList posts={posts} />
+<Base title={`#${tag}`} description={`标签「${tag}」下的 ${posts.length} 篇报告`}>
+  <div class="container">
+    <header class="page-head">
+      <a class="link-arrow back" href="/tags/"><span>←</span> 全部标签</a>
+      <h1><span class="hash">#</span>{tag}</h1>
+      <p class="sub mono">{posts.length} 篇报告</p>
+    </header>
+    <ul class="post-rows">
+      {
+        posts.map((post) => (
+          <li>
+            <PostRow post={post} id={ids.get(post.id)} />
+          </li>
+        ))
+      }
+    </ul>
+  </div>
 </Base>
 
 <style>
   .back {
-    margin: 2rem 0 0.5rem;
-    font-size: 0.82rem;
+    font-size: 13.5px;
   }
-  .back a {
-    color: var(--muted);
-    text-decoration: none;
+  .back:hover span {
+    transform: translateX(-3px);
   }
-  .page-title {
-    margin: 0 0 0.25rem;
-    font-size: 1.75rem;
+  .hash {
+    margin-right: 0.08em;
     color: var(--accent);
+    font-family: var(--font-mono);
+    font-weight: 400;
   }
 </style>

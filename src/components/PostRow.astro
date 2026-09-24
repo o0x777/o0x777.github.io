@@ -1,0 +1,34 @@
+---
+import { formatDate, postUrl, readingMinutes, vtName, type Post } from '../lib/site';
+
+interface Props {
+  post: Post;
+  id?: string;
+  compact?: boolean;
+}
+
+const { post, id, compact = false } = Astro.props;
+const { title, description, tags, pubDate } = post.data;
+---
+
+<a class:list={['post-row', { 'post-row--compact': compact }]} href={postUrl(post)}>
+  <span class="post-row__id">{id}</span>
+  <div>
+    <h3 class="post-row__title" style={`view-transition-name:${vtName(post)}`}>{title}</h3>
+    {!compact && description && <p class="post-row__desc">{description}</p>}
+    {
+      !compact && tags.length > 0 && (
+        <p class="post-row__tags">
+          {tags.map((t) => (
+            <span>#{t}</span>
+          ))}
+        </p>
+      )
+    }
+  </div>
+  <span class="post-row__meta">
+    <time datetime={pubDate.toISOString()}>{formatDate(pubDate, '.')}</time>
+    {!compact && <span>{readingMinutes(post.body)} min</span>}
+  </span>
+  <span class="post-row__arrow" aria-hidden="true">→</span>
+</a>

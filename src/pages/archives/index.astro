@@ -1,34 +1,92 @@
 ---
 import Base from '../../layouts/Base.astro';
-import PostList from '../../components/PostList.astro';
-import { dateParts, getPosts, type Post } from '../../lib/site';
+import PostRow from '../../components/PostRow.astro';
+import { dateParts, getPosts, reportIds, type Post } from '../../lib/site';
 
 const posts = await getPosts();
+const ids = reportIds(posts);
 const byYear = new Map<string, Post[]>();
 for (const post of posts) {
   const { year } = dateParts(post.data.pubDate);
   byYear.set(year, [...(byYear.get(year) ?? []), post]);
 }
+const years = [...byYear.keys()];
+const span = years.length > 1 ? `${years.at(-1)} — ${years[0]}` : years[0];
 ---
 
-<Base title="归档" description={`全部 ${posts.length} 篇文章`}>
-  <h1 class="page-title">归档</h1>
-  <p class="muted">共 {posts.length} 篇文章</p>
-  {
-    [...byYear].map(([year, list]) => (
-      <section>
-        <h2 class="section-title">
-          {year} · {list.length}
-        </h2>
-        <PostList posts={list} showDesc={false} showTags={false} />
-      </section>
-    ))
-  }
+<Base title="归档" description={`全部 ${posts.length} 篇研究报告`}>
+  <div class="container">
+    <header class="page-head">
+      <p class="eyebrow"><span class="accent">/</span> Archive</p>
+      <h1>归档</h1>
+      <p class="sub mono">{posts.length} 篇报告 · {span}</p>
+    </header>
+
+    <div class="timeline">
+      {
+        [...byYear].map(([year, list]) => (
+          <section class="year">
+            <h2 class="year-label mono">
+              {year}
+              <span>{list.length} 篇</span>
+            </h2>
+            <ul class="post-rows">
+              {list.map((post) => (
+                <li>
+                  <PostRow post={post} id={ids.get(post.id)} compact />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+  </div>
 </Base>
 
 <style>
-  .page-title {
-    margin: 2rem 0 0.25rem;
-    font-size: 2rem;
+  .timeline {
+    border-top: 1px solid var(--line);
+  }
+  .year {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 24px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .year-label {
+    position: sticky;
+    top: calc(var(--header-h) + 24px);
+    align-self: start;
+    margin: 0;
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+  }
+  .year-label span {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--fg-3);
+  }
+  .year .post-rows {
+    border-top: 0;
+  }
+  @media (max-width: 720px) {
+    .year {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .year-label {
+      position: static;
+    }
+    .year-label span {
+      display: inline;
+      margin-left: 12px;
+    }
   }
 </style>

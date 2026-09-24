@@ -1,0 +1,401 @@
+---
+// Simulated botnet topology that stays in the dark until the "tracker"
+// (the pointer, or an autopilot sweep) passes over it.
+---
+
+<canvas class="hero-net" aria-hidden="true"></canvas>
+
+<script>
+  type Node = {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    c2: boolean;
+    label: string;
+    phase: number;
+    reveal: number;
+  };
+  type Edge = { a: number; b: number; c2: boolean };
+  type Packet = { e: Edge; t0: number; dur: number };
+  type RGB = [number, number, number];
+
+  const canvas = document.querySelector<HTMLCanvasElement>('.hero-net');
+  const hero = canvas?.parentElement;
+  if (canvas && hero) init(canvas, hero);
+
+  function init(canvas: HTMLCanvasElement, hero: HTMLElement) {
+    const ctx = canvas.getContext('2d')!;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const C2_LABELS = ['C2 · irc:6667', 'C2 · tor:9050', 'C2 · dga.xyz'];
+    const ARCH = ['ARM', 'MIPS', 'x86', 'x64', 'PPC', 'ARM7', 'MIPSEL'];
+
+    let W = 0;
+    let H = 0;
+    let R = 220;
+    let nodes: Node[] = [];
+    let edges: Edge[] = [];
+    let packets: Packet[] = [];
+    let lastSpawn = 0;
+    let running = false;
+    let raf = 0;
+    const pointer = { x: 0, y: 0, active: false };
+    const tracker = { x: 0, y: 0 };
+    let fg: RGB = [237, 237, 239];
+    let accent: RGB = [255, 106, 61];
+
+    // Deterministic layout: same constellation on every visit
+    function rng(seed: number) {
+      return () => {
+        seed |= 0;
+        seed = (seed + 0x6d2b79f5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    // Resolve CSS colors (tokens use light-dark(), so read them through a probe)
+    const probe = document.createElement('span');
+    probe.style.display = 'none';
+    hero.append(probe);
+    function readColor(v: string): RGB {
+      probe.style.color = `var(${v})`;
+      const m = getComputedStyle(probe).color.match(/[\d.]+/g) || ['0', '0', '0'];
+      return [Number(m[0]), Number(m[1]), Number(m[2])];
+    }
+    function readColors() {
+      fg = readColor('--fg');
+      accent = readColor('--accent');
+    }
+    const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+    function build() {
+      const rect = hero.getBoundingClientRect();
+      W = rect.width;
+      H = rect.height;
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      R = W < 720 ? 150 : 230;
+
+      const rand = rng(777);
+      const count = Math.round(Math.min(150, Math.max(46, (W * H) / 8200)));
+
+      // Best-candidate sampling: evenly spread, never grid-like
+      const pts: { x: number; y: number }[] = [];
+      for (let i = 0; i < count; i++) {
+        let best = { x: 0, y: 0 };
+        let bestD = -1;
+        for (let k = 0; k < 12; k++) {
+          const p = { x: rand() * W, y: rand() * H };
+          let d = Infinity;
+          for (const q of pts) d = Math.min(d, (p.x - q.x) ** 2 + (p.y - q.y) ** 2);
+          if (d > bestD) (bestD = d), (best = p);
+        }
+        pts.push(best);
+      }
+
+      // C2 servers: far apart, in the right part of the hero (text lives on the left)
+      const c2Count = W < 720 ? 2 : 3;
+      const candidates = pts
+        .map((p, i) => ({ p, i }))
+        .filter(({ p }) => p.x > W * (W < 720 ? 0.2 : 0.52) && p.y > H * 0.15 && p.y < H * 0.85);
+      const c2: number[] = [];
+      if (candidates.length) c2.push(candidates[Math.floor(rand() * candidates.length)].i);
+      while (c2.length < c2Count && c2.length < candidates.length) {
+        let best = -1;
+        let bestD = -1;
+        for (const { p, i } of candidates) {
+          if (c2.includes(i)) continue;
+          const d = Math.min(...c2.map((j) => (p.x - pts[j].x) ** 2 + (p.y - pts[j].y) ** 2));
+          if (d > bestD) (bestD = d), (best = i);
+        }
+        c2.push(best);
+      }
+
+      nodes = pts.map((p, i) => {
+        const isC2 = c2.includes(i);
+        const angle = rand() * Math.PI * 2;
+        const speed = isC2 ? 0 : 0.03 + rand() * 0.07;
+        return {
+          x: p.x,
+          y: p.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          c2: isC2,
+          label: isC2
+            ? C2_LABELS[c2.indexOf(i) % C2_LABELS.length]
+            : `0x${Math.floor(rand() * 0xffff)
+                .toString(16)
+                .padStart(4, '0')} · ${ARCH[Math.floor(rand() * ARCH.length)]}`,
+          phase: rand(),
+          reveal: 0,
+        };
+      });
+
+      // C/S: every bot reports to its nearest C2.  P2P: plus a couple of close peers.
+      edges = [];
+      const seen = new Set<string>();
+      const maxPeer = (Math.min(W, 1400) * 0.11) ** 2;
+      nodes.forEach((n, i) => {
+        if (n.c2) return;
+        let near = c2[0];
+        for (const j of c2) {
+          if ((n.x - nodes[j].x) ** 2 + (n.y - nodes[j].y) ** 2 < (n.x - nodes[near].x) ** 2 + (n.y - nodes[near].y) ** 2)
+            near = j;
+        }
+        edges.push({ a: near, b: i, c2: true });
+        nodes
+          .map((m, j) => ({ j, d: (n.x - m.x) ** 2 + (n.y - m.y) ** 2, c2: m.c2 }))
+          .filter((o) => o.j !== i && !o.c2 && o.d < maxPeer)
+          .sort((p, q) => p.d - q.d)
+          .slice(0, 2)
+          .forEach(({ j }) => {
+            const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+            if (!seen.has(key)) seen.add(key), edges.push({ a: i, b: j, c2: false });
+          });
+      });
+      packets = [];
+
+      tracker.x = W * 0.72;
+      tracker.y = H * 0.45;
+      const stat = hero.querySelector('[data-net-stat]');
+      if (stat) stat.textContent = `${c2Count} C2 · ${nodes.length - c2Count} NODES`;
+    }
+
+    const smooth = (e0: number, e1: number, x: number) => {
+      const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+      return t * t * (3 - 2 * t);
+    };
+
+    function draw(t: number) {
+      // Tracker follows the pointer, otherwise sweeps the right side on its own
+      let tx = W * 0.72;
+      let ty = H * 0.45;
+      if (pointer.active) (tx = pointer.x), (ty = pointer.y);
+      else if (!reduced) {
+        const s = t * 0.00011;
+        tx = W * (W < 720 ? 0.5 + 0.3 * Math.sin(s * 1.7) : 0.74 + 0.15 * Math.sin(s * 1.7));
+        ty = H * (0.5 + 0.3 * Math.sin(s * 2.3 + 1.2));
+      }
+      tracker.x += (tx - tracker.x) * 0.08;
+      tracker.y += (ty - tracker.y) * 0.08;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // Spotlight
+      const g = ctx.createRadialGradient(tracker.x, tracker.y, 0, tracker.x, tracker.y, R * 1.1);
+      g.addColorStop(0, rgba(accent, 0.075));
+      g.addColorStop(1, rgba(accent, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(tracker.x - R * 1.1, tracker.y - R * 1.1, R * 2.2, R * 2.2);
+
+      // Drift + reveal
+      for (const n of nodes) {
+        if (!reduced && !n.c2) {
+          n.x += n.vx;
+          n.y += n.vy;
+          if (n.x < 0 || n.x > W) n.vx *= -1;
+          if (n.y < 0 || n.y > H) n.vy *= -1;
+        }
+        const d = Math.hypot(n.x - tracker.x, n.y - tracker.y);
+        const target = smooth(R, R * 0.3, d);
+        n.reveal += (target - n.reveal) * 0.12;
+      }
+
+      // Links
+      ctx.lineWidth = 1;
+      for (const e of edges) {
+        const a = nodes[e.a];
+        const b = nodes[e.b];
+        const v = e.c2 ? b.reveal : (a.reveal + b.reveal) / 2;
+        const alpha = e.c2 ? 0.045 + v * 0.5 : 0.03 + v * 0.28;
+        if (alpha < 0.02) continue;
+        ctx.strokeStyle = e.c2 ? rgba(accent, alpha) : rgba(fg, alpha);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      // Command packets flowing C2 → bot
+      if (!reduced) {
+        if (t - lastSpawn > 70) {
+          lastSpawn = t;
+          const c2Edges = edges.filter((e) => e.c2);
+          if (c2Edges.length) packets.push({ e: c2Edges[Math.floor(Math.random() * c2Edges.length)], t0: t, dur: 1100 + Math.random() * 1000 });
+        }
+        packets = packets.filter((p) => t - p.t0 < p.dur);
+        for (const p of packets) {
+          const k = (t - p.t0) / p.dur;
+          const a = nodes[p.e.a];
+          const b = nodes[p.e.b];
+          const x = a.x + (b.x - a.x) * k;
+          const y = a.y + (b.y - a.y) * k;
+          const v = b.reveal;
+          ctx.fillStyle = rgba(accent, 0.1 + v * 0.85);
+          ctx.beginPath();
+          ctx.arc(x, y, 1.4 + v * 0.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Nodes
+      for (const n of nodes) {
+        if (n.c2) {
+          const pulse = reduced ? 0.5 : (t * 0.0006 + n.phase) % 1;
+          ctx.strokeStyle = rgba(accent, (1 - pulse) * (0.18 + n.reveal * 0.4));
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 5 + pulse * 22, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = rgba(accent, 0.25 + n.reveal * 0.5);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = rgba(accent, 0.55 + n.reveal * 0.45);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = rgba(fg, 0.14 + n.reveal * 0.8);
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, 1.2 + n.reveal * 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Labels for what the tracker currently sees
+      // C2 labels claim space first; a bot label that would overlap is skipped.
+      // On narrow screens the text covers the canvas, so no labels at all.
+      if (W < 720) return drawReticle();
+      ctx.font = '500 10px "Geist Mono Variable", ui-monospace, monospace';
+      ctx.textBaseline = 'middle';
+      const placed: [number, number, number, number][] = [];
+      let shown = 0;
+      nodes
+        .filter((n) => n.reveal > 0.5)
+        .sort(
+          (a, b) =>
+            Number(b.c2) - Number(a.c2) ||
+            Math.hypot(a.x - tracker.x, a.y - tracker.y) - Math.hypot(b.x - tracker.x, b.y - tracker.y),
+        )
+        .forEach((n) => {
+          if (shown >= 6) return;
+          const x = n.x + (n.c2 ? 14 : 8);
+          const y = n.y - (n.c2 ? 0 : 8);
+          const w = ctx.measureText(n.label).width;
+          const box: [number, number, number, number] = [x - 4, y - 9, x + w + 4, y + 9];
+          if (placed.some((p) => box[0] < p[2] && box[2] > p[0] && box[1] < p[3] && box[3] > p[1])) return;
+          placed.push(box);
+          shown++;
+          const a = (n.reveal - 0.5) * 2;
+          ctx.fillStyle = n.c2 ? rgba(accent, a) : rgba(fg, a * 0.6);
+          ctx.fillText(n.label, x, y);
+        });
+
+      drawReticle();
+    }
+
+    function drawReticle() {
+      ctx.strokeStyle = rgba(fg, 0.12);
+      ctx.setLineDash([2, 5]);
+      ctx.beginPath();
+      ctx.arc(tracker.x, tracker.y, R * 0.42, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = rgba(fg, 0.22);
+      const r0 = R * 0.42 + 4;
+      const r1 = r0 + 8;
+      ctx.beginPath();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        ctx.moveTo(tracker.x + dx * r0, tracker.y + dy * r0);
+        ctx.lineTo(tracker.x + dx * r1, tracker.y + dy * r1);
+      }
+      ctx.stroke();
+    }
+
+    function loop(t: number) {
+      draw(t);
+      if (running) raf = requestAnimationFrame(loop);
+    }
+    // Settle the reveal state so a single static frame looks finished
+    function drawStill() {
+      for (let i = 0; i < 40; i++) draw(performance.now());
+    }
+
+    function start() {
+      if (running) return;
+      running = true;
+      raf = requestAnimationFrame(loop);
+    }
+    function stop() {
+      running = false;
+      cancelAnimationFrame(raf);
+    }
+
+    readColors();
+    build();
+    drawStill();
+
+    // Pointer tracking (window-level so the text on top doesn't block it)
+    addEventListener(
+      'pointermove',
+      (e) => {
+        const r = canvas.getBoundingClientRect();
+        const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        pointer.active = inside && e.pointerType === 'mouse';
+        pointer.x = e.clientX - r.left;
+        pointer.y = e.clientY - r.top;
+      },
+      { passive: true },
+    );
+    document.addEventListener('pointerleave', () => (pointer.active = false));
+
+    // Only animate while visible
+    let onScreen = true;
+    new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      onScreen && !document.hidden ? start() : stop();
+    }).observe(canvas);
+    document.addEventListener('visibilitychange', () => (onScreen && !document.hidden ? start() : stop()));
+
+    // Rebuild on resize, recolor on theme change
+    let resizeTimer = 0;
+    let lastW = W;
+    new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        if (Math.abs(hero.getBoundingClientRect().width - lastW) < 2) return;
+        build();
+        drawStill();
+        lastW = W;
+      }, 150);
+    }).observe(hero);
+    const recolor = () => (readColors(), running || drawStill());
+    new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
+  }
+</script>
+
+<style>
+  .hero-net {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    /* Fade under the headline and toward the bottom edge */
+    -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent), linear-gradient(to right, rgb(0 0 0 / 0.28), #000 58%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, #000 72%, transparent), linear-gradient(to right, rgb(0 0 0 / 0.28), #000 58%);
+    mask-composite: intersect;
+  }
+  @media (max-width: 720px) {
+    .hero-net {
+      -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.45) 60%, transparent);
+      mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.45) 60%, transparent);
+    }
+  }
+</style>

@@ -44,9 +44,10 @@ draft: false                  # true = 只在本地预览可见
 
 | 路径 | 作用 |
 |---|---|
-| `src/content/posts/` | 文章 |
-| `src/pages/about.md` | 关于页 |
-| `src/lib/site.ts` | 站点名称、简介、社交链接 |
-| `src/styles/global.css` | 颜色、字体、正文排版 |
-| `src/layouts/Base.astro` | 页头、导航、页脚 |
+| `src/content/posts/` | 文章（报告编号 0x01、0x02… 按发布时间自动生成） |
+| `src/lib/site.ts` | 首页文案、研究方向、社交链接——改文字只改这里 |
+| `src/pages/about.astro` | 关于页 |
+| `src/styles/global.css` | 设计系统：颜色、字体、正文排版。主色 `--accent` 在文件顶部 |
+| `src/components/HeroNetwork.astro` | 首页"追踪暗影"网络动画 |
+| `src/components/CommandPalette.astro` | ⌘K 搜索 |
 | `public/CNAME` | 自定义域名，不要删 |

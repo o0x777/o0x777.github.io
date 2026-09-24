@@ -1,0 +1,139 @@
+---
+import Icon from './Icon.astro';
+import Mark from './Mark.astro';
+import { BUILD_DATE, SITE } from '../lib/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container top">
+    <div class="intro">
+      <a class="brand" href="/">
+        <Mark size={22} />
+        <span class="mono">0x777</span>
+      </a>
+      <p class="motto">{SITE.motto.join('')}</p>
+    </div>
+
+    <div class="cols">
+      <div>
+        <p class="eyebrow">Navigate</p>
+        <ul>
+          <li><a href="/">文章</a></li>
+          <li><a href="/archives/">归档</a></li>
+          <li><a href="/tags/">标签</a></li>
+          <li><a href="/about/">关于</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="eyebrow">Connect</p>
+        <ul>
+          <li><a href={`mailto:${SITE.links.email}`}><Icon name="mail" size={15} />邮箱</a></li>
+          <li><a href={SITE.links.x} target="_blank" rel="me noopener"><Icon name="x" size={14} />X / Twitter</a></li>
+          <li><a href={SITE.links.github} target="_blank" rel="me noopener"><Icon name="github" size={15} />GitHub</a></li>
+          <li><a href="/rss.xml"><Icon name="rss" size={15} />RSS 订阅</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="container bottom mono">
+    <span>© {SITE.since}–{year} {SITE.author}</span>
+    <span>Built with Astro · Compiled {BUILD_DATE}</span>
+  </div>
+
+  <div class="wordmark" aria-hidden="true">0x777</div>
+</footer>
+
+<style>
+  .site-footer {
+    position: relative;
+    margin-top: clamp(80px, 12vw, 140px);
+    border-top: 1px solid var(--line);
+    overflow: hidden;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    gap: 48px;
+    padding-top: 56px;
+    padding-bottom: 48px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .motto {
+    margin: 16px 0 0;
+    max-width: 22em;
+    color: var(--fg-2);
+    font-size: 15px;
+  }
+
+  .cols {
+    display: flex;
+    gap: clamp(40px, 8vw, 96px);
+  }
+  .cols ul {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+  }
+  .cols a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg-2);
+    font-size: 14.5px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .cols a:hover {
+    color: var(--fg);
+  }
+
+  .bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 24px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+
+  .wordmark {
+    margin-bottom: -0.2em;
+    font-family: var(--font-mono);
+    font-size: clamp(96px, 24vw, 340px);
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.06em;
+    text-align: center;
+    white-space: nowrap;
+    color: transparent;
+    background: linear-gradient(to bottom, var(--line-strong), transparent 85%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  @media (max-width: 640px) {
+    .top {
+      flex-direction: column;
+      gap: 40px;
+    }
+  }
+</style>
