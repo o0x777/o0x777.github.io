@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostList from '../../components/PostList.astro';
+import { dateParts, getPosts, type Post } from '../../lib/site';
+
+const posts = await getPosts();
+const byYear = new Map<string, Post[]>();
+for (const post of posts) {
+  const { year } = dateParts(post.data.pubDate);
+  byYear.set(year, [...(byYear.get(year) ?? []), post]);
+}
+---
+
+<Base title="归档" description={`全部 ${posts.length} 篇文章`}>
+  <h1 class="page-title">归档</h1>
+  <p class="muted">共 {posts.length} 篇文章</p>
+  {
+    [...byYear].map(([year, list]) => (
+      <section>
+        <h2 class="section-title">
+          {year} · {list.length}
+        </h2>
+        <PostList posts={list} showDesc={false} showTags={false} />
+      </section>
+    ))
+  }
+</Base>
+
+<style>
+  .page-title {
+    margin: 2rem 0 0.25rem;
+    font-size: 2rem;
+  }
+</style>

@@ -1,0 +1,36 @@
+---
+import { formatDate, postUrl, tagUrl, type Post } from '../lib/site';
+
+interface Props {
+  posts: Post[];
+  showDesc?: boolean;
+  showTags?: boolean;
+}
+
+const { posts, showDesc = true, showTags = true } = Astro.props;
+---
+
+<ul class="post-list">
+  {
+    posts.map((post) => (
+      <li class="post-item">
+        <time datetime={post.data.pubDate.toISOString()}>{formatDate(post.data.pubDate)}</time>
+        <a class="title" href={postUrl(post)}>
+          {post.data.title}
+        </a>
+        {showDesc && post.data.description && <p class="desc">{post.data.description}</p>}
+        {showTags && post.data.tags.length > 0 && (
+          <ul class="tags">
+            {post.data.tags.map((tag) => (
+              <li>
+                <a class="tag" href={tagUrl(tag)}>
+                  #{tag}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))
+  }
+</ul>

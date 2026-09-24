@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="404">
+  <section class="nf mono">
+    <p class="muted">$ curl -I {'<this page>'}</p>
+    <p class="code">HTTP/1.1 404 Not Found</p>
+    <p>这个页面不存在，或者已经被移走了。</p>
+    <p><a href="/">← 回到首页</a></p>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    padding: 4rem 0;
+    font-size: 0.95rem;
+  }
+  .code {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+</style>
