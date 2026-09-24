@@ -12,7 +12,7 @@ export default defineConfig({
   integrations: [sitemap()],
   markdown: {
     shikiConfig: {
-      themes: { light: 'github-light', dark: 'github-dark-dimmed' },
+      themes: { light: 'vitesse-light', dark: 'vitesse-black' },
       wrap: false,
     },
   },

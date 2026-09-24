@@ -5,28 +5,33 @@
 
 /* ---------- Tokens ---------- */
 :root {
-  color-scheme: light dark;
+  /* Dark (terminal black) is the default; light only when chosen explicitly */
+  color-scheme: dark;
 
-  /* Surfaces (light, dark) */
-  --bg: light-dark(#fbfbfa, #08090a);
-  --bg-elev: light-dark(#ffffff, #0f1012);
-  --bg-hover: light-dark(#f3f3f1, #141519);
-  --bg-inset: light-dark(#f5f5f3, #0c0d0f);
-  --line: light-dark(rgb(12 13 16 / 0.08), rgb(255 255 255 / 0.075));
-  --line-strong: light-dark(rgb(12 13 16 / 0.15), rgb(255 255 255 / 0.14));
+  /* Surfaces (light, dark) — neutrals carry a faint green cast */
+  --bg: light-dark(#f6f8f6, #050706);
+  --bg-elev: light-dark(#ffffff, #0a0e0c);
+  --bg-hover: light-dark(#eef2ef, #0f1512);
+  --bg-inset: light-dark(#f0f4f1, #080b09);
+  --line: light-dark(rgb(10 30 18 / 0.09), rgb(150 255 190 / 0.075));
+  --line-strong: light-dark(rgb(10 30 18 / 0.16), rgb(150 255 190 / 0.15));
 
   /* Text — all ≥ 4.5:1 on --bg */
-  --fg: light-dark(#0c0d10, #ededef);
-  --fg-2: light-dark(#4f525a, #a3a6ad);
-  --fg-3: light-dark(#6e717a, #7c7f88);
+  --fg: light-dark(#0a0f0c, #e2ebe5);
+  --fg-2: light-dark(#4a554e, #98a69d);
+  --fg-3: light-dark(#68756d, #6e7d74);
 
-  /* Signal accent. --accent for marks & large type, --accent-text for small text */
-  --accent: light-dark(#e2471b, #ff6a3d);
-  --accent-text: light-dark(#c03b10, #ff7d56);
-  --accent-soft: light-dark(rgb(226 71 27 / 0.09), rgb(255 106 61 / 0.12));
-  --accent-line: light-dark(rgb(226 71 27 / 0.35), rgb(255 106 61 / 0.4));
+  /* Phosphor green. --accent for marks & large type, --accent-text for small text */
+  --accent: light-dark(#0fa24e, #39ff88);
+  --accent-text: light-dark(#08773a, #39ff88);
+  --accent-ink: #03140a; /* text on a green fill */
+  --accent-soft: light-dark(rgb(15 162 78 / 0.1), rgb(57 255 136 / 0.1));
+  --accent-line: light-dark(rgb(15 162 78 / 0.4), rgb(57 255 136 / 0.38));
+  --glow: light-dark(transparent, rgb(57 255 136 / 0.5));
+  /* Bots and P2P links in the hero network */
+  --net: light-dark(#3d4a42, #b5f5cd);
 
-  --shadow-color: light-dark(rgb(16 18 24 / 0.14), rgb(0 0 0 / 0.6));
+  --shadow-color: light-dark(rgb(10 30 18 / 0.14), rgb(0 0 0 / 0.7));
   --shadow-lg: 0 1px 0 var(--line), 0 24px 64px -16px var(--shadow-color);
 
   --font-sans: 'Geist Variable', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'HarmonyOS Sans SC',
@@ -44,15 +49,7 @@
 }
 :root[data-theme='light'] {
   color-scheme: light;
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --grain: 0.045;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --grain: 0.045;
-  }
+  --grain: 0.025;
 }
 
 /* ---------- Base ---------- */
@@ -93,7 +90,7 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: var(--grain, 0.025);
+  opacity: var(--grain, 0.045);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
@@ -117,8 +114,8 @@ a {
 }
 
 ::selection {
-  background: var(--accent-soft);
-  color: var(--fg);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 :focus-visible {
@@ -233,14 +230,16 @@ button {
   transform: translateY(2px);
 }
 .btn-primary {
-  background: var(--fg);
-  color: var(--bg);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset;
 }
 .btn-primary:hover {
   box-shadow:
     0 0 0 4px var(--accent-soft),
-    0 1px 0 rgb(255 255 255 / 0.12) inset;
+    0 0 28px -4px var(--glow),
+    0 1px 0 rgb(255 255 255 / 0.25) inset;
 }
 .btn-ghost {
   border-color: var(--line-strong);
@@ -741,20 +740,12 @@ a.chip:hover {
   color: var(--accent-text);
 }
 
-/* Shiki dual themes: light by default, dark tokens when dark is active */
-:root[data-theme='dark'] .astro-code,
-:root[data-theme='dark'] .astro-code span {
+/* Shiki dual themes: dark tokens unless the light theme is chosen */
+:root:not([data-theme='light']) .astro-code,
+:root:not([data-theme='light']) .astro-code span {
   color: var(--shiki-dark) !important;
   font-style: var(--shiki-dark-font-style) !important;
   font-weight: var(--shiki-dark-font-weight) !important;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .astro-code,
-  :root:not([data-theme='light']) .astro-code span {
-    color: var(--shiki-dark) !important;
-    font-style: var(--shiki-dark-font-style) !important;
-    font-weight: var(--shiki-dark-font-weight) !important;
-  }
 }
 
 .prose table {

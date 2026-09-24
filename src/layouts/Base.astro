@@ -30,8 +30,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#050706" />
     <meta name="author" content={SITE.author} />
 
     <meta property="og:type" content={type} />
@@ -45,10 +44,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <slot name="head" />
 
     <script is:inline>
-      // Apply the saved theme before first paint (no flash)
+      // Dark by default; apply a saved choice before first paint (no flash)
       try {
-        const t = localStorage.getItem('theme');
-        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
       } catch {}
     </script>
   </head>

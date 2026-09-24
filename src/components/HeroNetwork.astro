@@ -41,8 +41,9 @@
     let raf = 0;
     const pointer = { x: 0, y: 0, active: false };
     const tracker = { x: 0, y: 0 };
-    let fg: RGB = [237, 237, 239];
-    let accent: RGB = [255, 106, 61];
+    let fg: RGB = [181, 245, 205];
+    let accent: RGB = [57, 255, 136];
+    let glow = true;
 
     // Deterministic layout: same constellation on every visit
     function rng(seed: number) {
@@ -65,8 +66,9 @@
       return [Number(m[0]), Number(m[1]), Number(m[2])];
     }
     function readColors() {
-      fg = readColor('--fg');
+      fg = readColor('--net');
       accent = readColor('--accent');
+      glow = document.documentElement.dataset.theme !== 'light';
     }
     const rgba = (c: RGB, a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
@@ -257,9 +259,11 @@
           ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
           ctx.stroke();
           ctx.fillStyle = rgba(accent, 0.55 + n.reveal * 0.45);
+          if (glow) (ctx.shadowColor = rgba(accent, 0.9)), (ctx.shadowBlur = 8 + n.reveal * 10);
           ctx.beginPath();
           ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
         } else {
           ctx.fillStyle = rgba(fg, 0.14 + n.reveal * 0.8);
           ctx.beginPath();
@@ -377,7 +381,6 @@
     }).observe(hero);
     const recolor = () => (readColors(), running || drawStill());
     new MutationObserver(recolor).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', recolor);
   }
 </script>
 

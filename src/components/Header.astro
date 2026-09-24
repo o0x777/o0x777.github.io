@@ -83,8 +83,8 @@ const isActive = (href: string) =>
 
   // Theme toggle
   const root = document.documentElement;
-  const isDark = () =>
-    root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  // Dark is the default; light only when explicitly chosen
+  const isDark = () => root.dataset.theme !== 'light';
   const toggleTheme = () => {
     const next = isDark() ? 'light' : 'dark';
     const apply = () => {
@@ -239,27 +239,18 @@ const isActive = (href: string) =>
       transform 0.5s var(--ease),
       opacity 0.3s;
   }
-  .theme-toggle :global(.i-moon) {
-    opacity: 0;
-    transform: rotate(-90deg) scale(0.6);
-  }
-  :global(:root[data-theme='dark']) .theme-toggle :global(.i-sun) {
+  /* Moon while dark (default), sun once light is chosen */
+  .theme-toggle :global(.i-sun) {
     opacity: 0;
     transform: rotate(90deg) scale(0.6);
   }
-  :global(:root[data-theme='dark']) .theme-toggle :global(.i-moon) {
+  :global(:root[data-theme='light']) .theme-toggle :global(.i-sun) {
     opacity: 1;
     transform: none;
   }
-  @media (prefers-color-scheme: dark) {
-    :global(:root:not([data-theme='light'])) .theme-toggle :global(.i-sun) {
-      opacity: 0;
-      transform: rotate(90deg) scale(0.6);
-    }
-    :global(:root:not([data-theme='light'])) .theme-toggle :global(.i-moon) {
-      opacity: 1;
-      transform: none;
-    }
+  :global(:root[data-theme='light']) .theme-toggle :global(.i-moon) {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.6);
   }
 
   .menu-btn {

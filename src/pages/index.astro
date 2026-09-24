@@ -13,6 +13,7 @@ const ids = reportIds(posts);
   <section class="hero">
     <HeroNetwork />
     <div class="hero-grid" aria-hidden="true"></div>
+    <div class="hero-scan" aria-hidden="true"></div>
 
     <div class="container hero-inner">
       <p class="status mono">
@@ -24,7 +25,7 @@ const ids = reportIds(posts);
 
       <h1 class="hero-title">
         <span class="dim">{SITE.motto[0]}</span>
-        <span class="bright">追踪<em>暗影</em>。</span>
+        <span class="bright">追踪<em>暗影</em>。<span class="cursor" aria-hidden="true"></span></span>
       </h1>
       <p class="hero-en">— {SITE.mottoEn}</p>
 
@@ -143,6 +144,7 @@ const ids = reportIds(posts);
     height: 7px;
     border-radius: 50%;
     background: var(--accent);
+    box-shadow: 0 0 10px var(--glow);
   }
   .status .dot::after {
     content: '';
@@ -184,6 +186,36 @@ const ids = reportIds(posts);
   .hero-title em {
     font-style: normal;
     color: var(--accent);
+    text-shadow: 0 0 32px var(--glow);
+  }
+  /* Terminal block cursor */
+  .cursor {
+    display: inline-block;
+    width: 0.46em;
+    height: 0.86em;
+    margin-left: 0.06em;
+    vertical-align: -0.06em;
+    background: var(--accent);
+    box-shadow: 0 0 18px var(--glow);
+    animation: blink 1.06s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* CRT scanlines over the network, under the text (dark theme only) */
+  .hero-scan {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.28) 0 1px, transparent 1px 3px);
+    opacity: 0.5;
+  }
+  :global(:root[data-theme='light']) .hero-scan {
+    display: none;
   }
   .hero-en {
     margin: 20px 0 0;
