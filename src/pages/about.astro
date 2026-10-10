@@ -43,28 +43,27 @@ const [leadHead, ...leadRest] = ABOUT.lead.split(/(?<=。)/);
       <p class="note">从进攻，到守护。</p>
     </div>
 
-    <ol class="journey" data-reveal>
+    <ol class="chain" data-reveal>
       {
         ABOUT.career.map((c, i) => (
-          <li class:list={{ now: c.now }} style={`--d:${i}`}>
-            <span class="node" aria-hidden="true" />
-            <div class="head">
-              <p class="idx mono">
-                0{i + 1} · {c.en}
-                {c.now && <span class="now-tag">NOW</span>}
-              </p>
-              <h3>
-                <span class="verb">{c.verb}</span>
-                <span class="dom">{c.domain}</span>
-              </h3>
+          <li class:list={['stage', { now: c.now }]} style={`--d:${i}; --mix:${5 + i * 5}%`}>
+            <div class="chev-wrap">
+              <div class="chev">
+                <p class="chev-meta mono">
+                  0{i + 1} · {c.en}
+                  {c.now && <span class="now-tag">NOW</span>}
+                </p>
+                <h3 class="verb">{c.verb}</h3>
+              </div>
             </div>
-            <div class="detail">
+            <div class="info">
+              <p class="dom">{c.domain}</p>
               <p class="line">{c.line}</p>
-              <p class="skills" aria-label={`技能：${c.skills.join('、')}`}>
+              <ul class="skills" aria-label={`技能：${c.skills.join('、')}`}>
                 {c.skills.map((s) => (
-                  <span>{s}</span>
+                  <li>{s}</li>
                 ))}
-              </p>
+              </ul>
             </div>
           </li>
         ))
@@ -185,208 +184,160 @@ const [leadHead, ...leadRest] = ABOUT.lead.split(/(?<=。)/);
     font-size: 13px;
   }
 
-  /* ---------- 01 Journey: vertical timeline, one row per stage ---------- */
-  .journey {
-    --node: 15px;
-    --ny: 50%; /* vertical centre of each node */
-    position: relative;
-    margin: 0;
+  /* ---------- 01 Kill chain: five interlocking arrows, left → right ---------- */
+  .chain {
+    --tip: 22px; /* depth of each arrow point / notch */
+    --gap: 6px; /* visible gap between neighbouring arrows */
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin: 8px 0 0;
     padding: 0;
     list-style: none;
-    border-top: 1px solid var(--line);
   }
-  /* The rail is drawn per row (::before) and filled in green row by row (::after),
-     starting at the first node and ending at the current one */
-  .journey > li::before,
-  .journey > li::after {
-    content: '';
-    position: absolute;
-    left: 7px;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-  }
-  .journey > li::before {
-    background: var(--line-strong);
-  }
-  .journey > li::after {
-    background: var(--accent-line);
-    transform-origin: top;
-    transition: transform 0.5s var(--ease);
-    transition-delay: calc(0.3s + var(--d) * 0.25s);
-  }
-  :global(.js) .journey:not([data-in]) > li::after {
-    transform: scaleY(0);
-  }
-  .journey > li:first-child::before,
-  .journey > li:first-child::after {
-    top: var(--ny);
-  }
-  .journey > li:last-child::before,
-  .journey > li:last-child::after {
-    bottom: auto;
-    height: var(--ny);
-  }
-  .now::after {
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--glow);
+  .stage {
+    min-width: 0;
   }
 
-  .journey > li {
+  /* Arrow banner. The wrapper carries the glow (filters get clipped otherwise). */
+  .chev-wrap {
     position: relative;
-    display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
-    align-items: center;
-    gap: 32px;
-    padding: 30px 0 30px 56px;
-    border-bottom: 1px solid var(--line);
-  }
-  /* Rows light up one after another, following the fill */
-  :global(.js) .journey > li {
-    opacity: 0;
-    transform: translateY(12px);
+    margin-right: calc((var(--tip) - var(--gap)) * -1);
     transition:
-      opacity 0.7s var(--ease),
-      transform 0.7s var(--ease);
-    transition-delay: calc(0.2s + var(--d) * 0.25s);
+      filter 0.3s,
+      transform 0.4s var(--ease);
   }
-  :global(.js) .journey[data-in] > li {
-    opacity: 1;
-    transform: none;
+  .stage:last-child .chev-wrap {
+    margin-right: 0;
   }
-
-  .node {
-    position: absolute;
-    z-index: 1;
-    left: 0;
-    top: var(--ny);
-    width: var(--node);
-    height: var(--node);
-    margin-top: calc(var(--node) / -2);
-    border: 1px solid var(--line-strong);
-    border-radius: 50%;
-    background: var(--bg);
-    transition: border-color 0.3s;
+  .chev {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 96px;
+    padding: 0 calc(var(--tip) + 12px) 0 calc(var(--tip) + 16px);
+    background: color-mix(in oklab, var(--accent) var(--mix), var(--bg-elev));
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--tip)) 0,
+      100% 50%,
+      calc(100% - var(--tip)) 100%,
+      0 100%,
+      var(--tip) 50%
+    );
   }
-  .node::after {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border-radius: 50%;
-    background: var(--fg-3);
-    transition: background-color 0.3s;
+  .stage:first-child .chev {
+    padding-left: 20px;
+    border-radius: 10px 0 0 10px;
+    clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
   }
-  .journey > li:hover .node {
-    border-color: var(--accent-line);
-  }
-  .journey > li:hover .node::after,
-  .now .node::after {
-    background: var(--accent);
-    box-shadow: 0 0 10px var(--glow);
-  }
-  .now .node {
-    border-color: var(--accent-line);
-  }
-  .now .node::before {
-    content: '';
-    position: absolute;
-    inset: -6px;
-    border: 1px solid var(--accent);
-    border-radius: 50%;
-    animation: ping 2.2s var(--ease) infinite;
-  }
-  @keyframes ping {
-    from {
-      transform: scale(0.5);
-      opacity: 1;
-    }
-    to {
-      transform: scale(1.6);
-      opacity: 0;
-    }
-  }
-
-  .idx {
+  .chev-meta {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     color: var(--fg-3);
-    font-size: 11px;
+    font-size: 10.5px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-  }
-  .now-tag {
-    padding: 1px 6px;
-    border-radius: 4px;
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-size: 9.5px;
-    font-weight: 700;
-  }
-  .head h3 {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
-    margin: 0;
+    white-space: nowrap;
   }
   .verb {
-    font-size: clamp(34px, 3.6vw, 46px);
+    margin: 0;
+    font-size: clamp(26px, 2.6vw, 34px);
     font-weight: 600;
     line-height: 1;
     letter-spacing: -0.02em;
-    transition: color 0.3s;
-  }
-  .journey > li:hover .verb {
-    color: var(--accent-text);
-  }
-  .now .verb {
-    color: var(--accent);
-    text-shadow: 0 0 28px var(--glow);
-  }
-  .dom {
-    color: var(--fg-3);
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap;
   }
 
-  .line {
+  /* Current stage: solid phosphor green */
+  .now .chev {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .now .chev-meta {
+    color: color-mix(in oklab, var(--accent-ink) 70%, var(--accent));
+  }
+  .now .chev-wrap {
+    filter: drop-shadow(0 0 22px color-mix(in oklab, var(--glow) 70%, transparent));
+  }
+  .now-tag {
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: var(--accent-ink);
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .stage:not(.now):hover .chev-wrap {
+    filter: brightness(1.35);
+  }
+
+  /* Column under each arrow */
+  .info {
+    padding: 26px 20px 0 calc(var(--tip) + 16px);
+  }
+  .stage:first-child .info {
+    padding-left: 20px;
+  }
+  .dom {
     margin: 0 0 10px;
+    color: var(--fg-3);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .line {
+    margin: 0 0 18px;
     color: var(--fg);
-    font-size: 17px;
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.7;
+    /* Break at punctuation/spaces only: "从 CTF 开始，/ 读懂每一行汇编。" */
+    word-break: keep-all;
   }
   .skills {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 18px;
+    display: grid;
+    gap: 6px;
     margin: 0;
+    padding: 14px 0 0;
+    list-style: none;
+    border-top: 1px dashed var(--line-strong);
     color: var(--fg-2);
-    font-size: 15px;
+    font-size: 14px;
     transition: color 0.3s;
   }
-  /* A small bullet travels with each keyword, so wrapping never strands a separator */
-  .skills span {
-    display: inline-flex;
+  .skills li {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    white-space: nowrap;
+    gap: 10px;
   }
-  .skills span::before {
+  .skills li::before {
     content: '';
+    flex: none;
     width: 4px;
     height: 4px;
     border-radius: 50%;
     background: currentColor;
     opacity: 0.45;
   }
-  .journey > li:hover .skills {
+  .stage:hover .skills {
     color: var(--fg);
   }
   .now .skills {
     color: var(--accent-text);
+  }
+
+  /* Arrows slide in from the left, one after another */
+  :global(.js) .stage {
+    opacity: 0;
+    transform: translateX(-18px);
+    transition:
+      opacity 0.6s var(--ease),
+      transform 0.6s var(--ease);
+    transition-delay: calc(0.15s + var(--d) * 0.16s);
+  }
+  :global(.js) .chain[data-in] .stage {
+    opacity: 1;
+    transform: none;
   }
 
   /* ---------- Responsive ---------- */
@@ -397,28 +348,36 @@ const [leadHead, ...leadRest] = ABOUT.lead.split(/(?<=。)/);
     .file {
       max-width: 520px;
     }
-    .journey > li {
-      grid-template-columns: 200px minmax(0, 1fr);
-      gap: 24px;
-    }
   }
-  @media (max-width: 720px) {
-    .journey > li {
+  /* Narrow screens: arrows point down and stack */
+  @media (max-width: 860px) {
+    .chain {
+      --tip: 14px;
       grid-template-columns: minmax(0, 1fr);
-      gap: 14px;
-      padding: 26px 0 26px 40px;
     }
-    .journey {
-      --ny: 47px;
+    .chev-wrap,
+    .stage:last-child .chev-wrap {
+      margin-right: 0;
     }
-    .idx {
-      margin-bottom: 10px;
+    .chev,
+    .stage:first-child .chev {
+      height: auto;
+      padding: 16px 20px calc(var(--tip) + 14px);
+      border-radius: 0;
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tip)), 50% 100%, 0 calc(100% - var(--tip)));
     }
-    .line {
-      font-size: 16px;
+    .stage:first-child .chev {
+      border-radius: 10px 10px 0 0;
+    }
+    .info,
+    .stage:first-child .info {
+      padding: 18px 4px 32px;
     }
     .skills {
-      font-size: 14.5px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    :global(.js) .stage {
+      transform: translateY(14px);
     }
   }
 </style>
