@@ -8,8 +8,8 @@ const posts = await getPosts();
 const ids = reportIds(posts);
 const data = {
   reports: posts.map((p) => ({ id: ids.get(p.id), t: p.data.title, u: postUrl(p), d: formatDate(p.data.pubDate, '.') })),
-  career: ABOUT.career.map((c) => ({ verb: c.verb, d: c.domain, line: c.line, keys: c.keys, now: !!c.now })),
-  skills: ABOUT.skills.map((s) => ({ d: s.domain, en: s.en, items: s.items })),
+  career: ABOUT.career.map((c) => ({ verb: c.verb, d: c.domain, line: c.line, now: !!c.now })),
+  skills: ABOUT.career.map((c) => ({ d: c.domain, items: c.skills })),
   email: SITE.links.email,
   x: SITE.links.x,
   xHandle: SITE.links.xHandle,
