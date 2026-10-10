@@ -48,7 +48,7 @@ export const ABOUT = {
       title: '数据安全',
       en: 'Data Security',
       body: '负责国际化业务的数据安全与合规。',
-      keys: ['数据安全', '跨境合规', '隐私保护'],
+      keys: ['数据安全', '数据防泄漏', '跨境合规', '隐私保护'],
       now: true,
     },
   ],
@@ -86,31 +86,6 @@ export const ABOUT = {
       items: ['分类分级', '跨境数据合规', '隐私保护', '数据防泄漏', '权限治理'],
     },
   ],
-
-  /** Highlights per report, keyed by the post's `slug`. Numbers come from the reports themselves. */
-  reportHighlights: {
-    Necro僵尸网络: [
-      { n: '4', label: '个版本' },
-      { n: '16', label: '种 C2 指令' },
-      { n: '8', label: '种漏洞利用' },
-    ],
-    深入解析僵尸网络Botnet: [
-      { n: '3', label: '种结构模型' },
-      { n: '3', label: '条捕获渠道' },
-      { n: '3', label: '种反制手段' },
-    ],
-  } as Record<string, { n: string; label: string }[]>,
-
-  countries: '10+',
-  interests: {
-    travel: '到访 10+ 个国家，参加安全会议，探索各地的黑客文化。',
-    games: '热爱复古游戏与解谜挑战。这个页面里，也藏了一道题。',
-    books: ['行为经济学', '黑客历史', '科幻'],
-  },
-
-  contact: {
-    body: '安全研究交流、威胁情报线索、业务安全与数据安全话题，都欢迎来信。',
-  },
 };
 
 /** base64 of the flag hidden in the About terminal (`ls -a`, `cat .flag`, `submit`). */
