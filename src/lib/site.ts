@@ -6,7 +6,7 @@ export const SITE = {
   description: '0x777 的安全档案：逆向、威胁情报、业务安全与数据安全。',
   motto: ['保持好奇，保持隐秘，', '追踪暗影。'],
   mottoEn: 'tracking the shadows, since 2021.',
-  lead: '0x777 的安全档案。从 CTF 逆向起步，走过威胁情报、业务安全与黑产对抗，如今专注安全治理与数据安全——在这里记录研究与思考。',
+  lead: '0x777 的安全档案。攻防出身——拆解过代码，追踪过暗影，如今守护数据。',
   author: '0x777',
   since: 2021,
   links: {

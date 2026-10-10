@@ -5,6 +5,9 @@ import CaseFile from '../components/about/CaseFile.astro';
 import Terminal from '../components/about/Terminal.astro';
 import { ABOUT } from '../lib/about';
 import { SITE } from '../lib/site';
+
+// "攻防出身。" on its own line, the rest below it
+const [leadHead, ...leadRest] = ABOUT.lead.split(/(?<=。)/);
 ---
 
 <Base title="关于我" description="0x777 — 安全从业者，攻防出身：逆向、威胁情报、业务安全与数据安全。">
@@ -16,18 +19,11 @@ import { SITE } from '../lib/site';
         <span class="hi">你好，</span>
         <span>我是 <span class="handle mono" data-scramble>0x777</span>。</span>
       </h1>
-      <p class="path mono" data-reveal style="--d:2" aria-label={`安全轨迹：${ABOUT.path.join('，')}`}>
-        {
-          ABOUT.path.map((p, i) => (
-            <>
-              {i > 0 && <span class="sep" aria-hidden="true">→</span>}
-              <span class:list={{ now: i === ABOUT.path.length - 1 }}>{p}</span>
-            </>
-          ))
-        }
+      <p class="lead" data-reveal style="--d:2">
+        <span class="l1">{leadHead}</span>
+        <span>{leadRest.join('')}</span>
       </p>
-      <p class="lead" data-reveal style="--d:3">{ABOUT.lead}</p>
-      <div class="cta" data-reveal style="--d:4">
+      <div class="cta" data-reveal style="--d:3">
         <a class="btn btn-primary" href={`mailto:${SITE.links.email}`}><Icon name="mail" size={16} />发个信号</a>
         <a class="btn btn-ghost" href="#terminal">打开终端 <span class="mono prompt-glyph">›_</span></a>
       </div>
@@ -44,7 +40,7 @@ import { SITE } from '../lib/site';
         <p class="eyebrow"><span class="accent">01</span> — Trajectory</p>
         <h2 id="career-title">安全轨迹</h2>
       </div>
-      <p class="note">攻防出身，一路走到数据安全</p>
+      <p class="note">从进攻，到守护。</p>
     </div>
     <ol class="track" data-reveal>
       <span class="rail" aria-hidden="true"><span class="fill"></span></span>
@@ -56,8 +52,11 @@ import { SITE } from '../lib/site';
               0{i + 1} · {c.en}
               {c.now && <span class="now-tag">NOW</span>}
             </p>
-            <h3>{c.title}</h3>
-            <p class="body">{c.body}</p>
+            <h3>
+              <span class="verb">{c.verb}</span>
+              <span class="dom">{c.domain}</span>
+            </h3>
+            <p class="line">{c.line}</p>
             <ul class="keys">
               {c.keys.map((k) => (
                 <li class="mono">{k}</li>
@@ -74,27 +73,26 @@ import { SITE } from '../lib/site';
     <div class="section-head" data-reveal>
       <div>
         <p class="eyebrow"><span class="accent">02</span> — Skills</p>
-        <h2 id="skills-title">技能图谱</h2>
+        <h2 id="skills-title">技能</h2>
       </div>
     </div>
     <ul class="skills">
       {
         ABOUT.skills.map((s, i) => (
           <li data-reveal style={`--d:${i}`}>
+            <span class="s-idx mono">0{i + 1}</span>
             <div class="domain">
-              <span class="d-icon">
-                <Icon name={s.icon as any} size={19} />
-              </span>
-              <div>
-                <h3>{s.domain}</h3>
-                <p class="mono">{s.en}</p>
-              </div>
+              <h3>{s.domain}</h3>
+              <p class="mono">{s.en}</p>
             </div>
-            <ul class="items">
-              {s.items.map((it) => (
-                <li>{it}</li>
+            <p class="items">
+              {s.items.map((it, j) => (
+                <>
+                  {j > 0 && <span class="dot" aria-hidden="true">·</span>}
+                  <span>{it}</span>
+                </>
               ))}
-            </ul>
+            </p>
           </li>
         ))
       }
@@ -171,32 +169,20 @@ import { SITE } from '../lib/site';
     letter-spacing: -0.05em;
     text-shadow: 0 0 36px var(--glow);
   }
-  .path {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-    margin: 0 0 22px;
-    color: var(--fg-2);
-    font-size: 13px;
-    letter-spacing: 0.02em;
-  }
-  .path .sep {
-    color: var(--fg-3);
-  }
-  .path .now {
-    padding: 2px 8px;
-    border: 1px solid var(--accent-line);
-    border-radius: 6px;
-    color: var(--accent-text);
-    background: var(--accent-soft);
-  }
+  /* One-line statement */
   .lead {
-    max-width: 32em;
+    display: flex;
+    flex-direction: column;
     margin: 0;
+    word-break: keep-all;
     color: var(--fg-2);
-    font-size: clamp(16px, 1.6vw, 18px);
-    line-height: 1.9;
+    font-size: clamp(18px, 2vw, 22px);
+    line-height: 1.7;
+    letter-spacing: -0.01em;
+  }
+  .lead .l1 {
+    color: var(--fg);
+    font-weight: 500;
   }
   .cta {
     display: flex;
@@ -335,19 +321,31 @@ import { SITE } from '../lib/site';
     font-weight: 700;
   }
   .track h3 {
-    margin: 0 0 10px;
-    font-size: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 14px;
+  }
+  .verb {
+    font-size: clamp(32px, 3.4vw, 44px);
     font-weight: 600;
+    line-height: 1;
     letter-spacing: -0.02em;
   }
-  .now h3 {
-    color: var(--accent-text);
+  .now .verb {
+    color: var(--accent);
+    text-shadow: 0 0 28px var(--glow);
   }
-  .track .body {
+  .dom {
+    color: var(--fg-3);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .track .line {
     margin: 0 0 16px;
     color: var(--fg-2);
-    font-size: 14px;
-    line-height: 1.8;
+    font-size: 14.5px;
+    line-height: 1.75;
   }
   .keys {
     display: flex;
@@ -370,7 +368,7 @@ import { SITE } from '../lib/site';
     color: var(--accent-text);
   }
 
-  /* ---------- 02 Skills ---------- */
+  /* ---------- 02 Skills: spec sheet ---------- */
   .skills {
     margin: 0;
     padding: 0;
@@ -379,47 +377,28 @@ import { SITE } from '../lib/site';
   }
   .skills > li {
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    align-items: center;
-    gap: 24px;
-    margin: 0 -16px;
-    padding: 22px 16px;
-    border-bottom: 1px solid var(--line);
-    border-radius: 14px;
-    transition: background-color 0.25s;
-  }
-  .skills > li:hover {
-    background: var(--bg-hover);
-  }
-  .domain {
-    display: flex;
-    align-items: center;
+    grid-template-columns: 48px 220px minmax(0, 1fr);
+    align-items: baseline;
     gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .d-icon {
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 42px;
-    height: 42px;
-    border: 1px solid var(--line-strong);
-    border-radius: 11px;
-    color: var(--fg-2);
-    transition:
-      color 0.25s,
-      border-color 0.25s;
+  .s-idx {
+    color: var(--fg-3);
+    font-size: 12px;
+    transition: color 0.25s;
   }
-  .skills > li:hover .d-icon {
-    color: var(--accent);
-    border-color: var(--accent-line);
+  .skills > li:hover .s-idx {
+    color: var(--accent-text);
   }
   .domain h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .domain p {
-    margin: 2px 0 0;
+    margin: 4px 0 0;
     color: var(--fg-3);
     font-size: 11px;
     letter-spacing: 0.1em;
@@ -428,25 +407,18 @@ import { SITE } from '../lib/site';
   .items {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    align-items: baseline;
+    gap: 4px 14px;
     margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .items li {
-    padding: 6px 12px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--bg-elev);
     color: var(--fg-2);
-    font-size: 14px;
-    transition:
-      color 0.2s,
-      border-color 0.2s;
+    font-size: 16px;
+    transition: color 0.25s;
   }
-  .skills > li:hover .items li {
+  .items .dot {
+    color: var(--fg-3);
+  }
+  .skills > li:hover .items {
     color: var(--fg);
-    border-color: var(--line-strong);
   }
 
   /* ---------- Responsive ---------- */
@@ -469,14 +441,12 @@ import { SITE } from '../lib/site';
   }
   @media (max-width: 760px) {
     .skills > li {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
-      margin: 0;
-      padding: 22px 0;
-      border-radius: 0;
+      grid-template-columns: 36px minmax(0, 1fr);
+      row-gap: 10px;
     }
-    .skills > li:hover {
-      background: none;
+    .items {
+      grid-column: 2;
+      font-size: 15px;
     }
   }
   @media (max-width: 680px) {
@@ -493,9 +463,6 @@ import { SITE } from '../lib/site';
     .node {
       left: -36px;
       top: 2px;
-    }
-    .items li {
-      font-size: 13.5px;
     }
   }
 </style>

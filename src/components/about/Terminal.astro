@@ -8,7 +8,7 @@ const posts = await getPosts();
 const ids = reportIds(posts);
 const data = {
   reports: posts.map((p) => ({ id: ids.get(p.id), t: p.data.title, u: postUrl(p), d: formatDate(p.data.pubDate, '.') })),
-  career: ABOUT.career.map((c) => ({ t: c.title, en: c.en, keys: c.keys, now: !!c.now })),
+  career: ABOUT.career.map((c) => ({ verb: c.verb, d: c.domain, line: c.line, keys: c.keys, now: !!c.now })),
   skills: ABOUT.skills.map((s) => ({ d: s.domain, en: s.en, items: s.items })),
   email: SITE.links.email,
   x: SITE.links.x,
@@ -117,14 +117,14 @@ const chips = ['whoami', 'career', 'skills', 'reports', 'contact', 'help'];
         dim('（还有一些没写在这里的命令。保持好奇。）'),
       ],
       whoami: () => [
-        [acc('0x777'), ' — 安全从业者，攻防出身'],
-        '逆向 · 威胁情报 · 业务安全 · 数据安全',
+        [acc('0x777'), ' — 攻防出身'],
+        '拆解过代码，追踪过暗影，如今守护数据。',
         dim(D.motto),
       ],
       career: () =>
         D.career.flatMap((c: any, i: number) => [
-          [acc(`0${i + 1} ${c.t}`), dim(` ${c.en}`), ...(c.now ? [acc('  ← now')] : [])],
-          dim(`   ${c.keys.join(' · ')}`),
+          [acc(`0${i + 1} ${c.verb}`), `  ${c.d}`, ...(c.now ? [acc('  ← now')] : [])],
+          dim(`   ${c.line}`),
         ]),
       skills: () => [
         dim(`total ${D.skills.length}`),

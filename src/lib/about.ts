@@ -3,10 +3,7 @@
 // each career stage. Keep it that way when editing.
 
 export const ABOUT = {
-  lead: '从 CTF 逆向起步，先后深耕二进制安全、威胁情报与僵尸网络、业务安全与黑产对抗，如今专注安全治理与数据安全。',
-
-  /** One-line keyword path shown under the headline */
-  path: ['Reverse', 'Threat Intel', 'BizSec', 'Security BP', 'Data Security'],
+  lead: '攻防出身。拆解过代码，追踪过暗影，如今守护数据。',
 
   /** Case-file fields. `redacted: true` renders a classified bar instead of a value. */
   profile: [
@@ -18,73 +15,29 @@ export const ABOUT = {
     { k: '当前', en: 'NOW', v: '数据安全' },
   ],
 
-  /** Career stages, oldest first. No dates or organisations. */
+  /** Career stages, oldest first: one verb each. No dates or organisations. */
   career: [
+    { verb: '拆解', domain: '逆向 · CTF', en: 'Reverse', line: '从 CTF 开始，读懂每一行汇编。', keys: ['Android', 'Windows', '二进制漏洞'] },
+    { verb: '追踪', domain: '威胁情报', en: 'Threat Intel', line: '盯住僵尸网络的每一个 C2。', keys: ['Botnet', '恶意样本', 'C2 / IOC'] },
+    { verb: '对抗', domain: '业务安全', en: 'Biz Security', line: '与黑产正面交锋。', keys: ['黑产溯源', '业务风控'] },
+    { verb: '统筹', domain: '安全 BP', en: 'Security BP', line: '为业务守住整条防线。', keys: ['安全 BP', '风险治理'] },
     {
-      title: 'CTF · 逆向',
-      en: 'Reverse',
-      body: '从 CTF 起步，专攻 Android 与 Windows 逆向，深入二进制漏洞。',
-      keys: ['Android 逆向', 'Windows 逆向', '二进制漏洞'],
-    },
-    {
-      title: '威胁情报',
-      en: 'Threat Intel',
-      body: '跟踪活跃的 Botnet 家族，分析恶意样本，提取 C2 与 IOC。',
-      keys: ['Botnet 跟踪', '样本分析', 'C2 / IOC'],
-    },
-    {
-      title: '业务安全',
-      en: 'Biz Security',
-      body: '进入互联网甲方，正面对抗黑产：溯源打击，建设业务风控。',
-      keys: ['黑产溯源', '打击治理', '业务风控'],
-    },
-    {
-      title: '安全 BP',
-      en: 'Security BP',
-      body: '作为业务线安全 BP，统筹业务侧的整体安全与风险。',
-      keys: ['安全 BP', '安全治理', '风险评估'],
-    },
-    {
-      title: '数据安全',
+      verb: '守护',
+      domain: '数据安全',
       en: 'Data Security',
-      body: '负责国际化业务的数据安全与合规。',
-      keys: ['数据安全', '数据防泄漏', '跨境合规', '隐私保护'],
+      line: '让数据安全地流向世界。',
+      keys: ['数据防泄漏', '跨境合规', '隐私保护'],
       now: true,
     },
   ],
 
-  /** Skills by domain — keywords only, kept deliberately short */
+  /** Skills by domain — four keywords each */
   skills: [
-    {
-      domain: '逆向与漏洞',
-      en: 'Reverse & Vuln',
-      icon: 'chip',
-      items: ['Android 逆向', 'Windows 逆向', '脱壳与反混淆', '二进制漏洞', 'Fuzzing', 'IDA / Frida'],
-    },
-    {
-      domain: '威胁情报',
-      en: 'Threat Intel',
-      icon: 'graph',
-      items: ['Botnet 跟踪', '恶意样本分析', 'C2 / IOC', 'YARA', '蜜罐', '情报运营'],
-    },
-    {
-      domain: '业务安全',
-      en: 'Biz Security',
-      icon: 'target',
-      items: ['黑产溯源', '反欺诈', '业务风控', '设备指纹', '账号安全', '策略与模型'],
-    },
-    {
-      domain: '安全治理',
-      en: 'Governance',
-      icon: 'shield',
-      items: ['安全 BP', '风险评估', '安全架构评审', 'SDL', '应急响应'],
-    },
-    {
-      domain: '数据安全',
-      en: 'Data Security',
-      icon: 'lock',
-      items: ['分类分级', '跨境数据合规', '隐私保护', '数据防泄漏', '权限治理'],
-    },
+    { domain: '逆向', en: 'Reverse', items: ['Android', 'Windows', '漏洞挖掘', 'IDA / Frida'] },
+    { domain: '威胁情报', en: 'Threat Intel', items: ['Botnet', '样本分析', 'YARA', '蜜罐'] },
+    { domain: '业务安全', en: 'Biz Security', items: ['黑产溯源', '反欺诈', '风控策略', '设备指纹'] },
+    { domain: '安全治理', en: 'Governance', items: ['安全 BP', '风险评估', '架构评审', '应急响应'] },
+    { domain: '数据安全', en: 'Data Security', items: ['数据防泄漏', '分类分级', '跨境合规', '隐私保护'] },
   ],
 };
 
