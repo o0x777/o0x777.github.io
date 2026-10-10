@@ -8,8 +8,8 @@ const posts = await getPosts();
 const ids = reportIds(posts);
 const data = {
   reports: posts.map((p) => ({ id: ids.get(p.id), t: p.data.title, u: postUrl(p), d: formatDate(p.data.pubDate, '.') })),
-  focus: ABOUT.focus.map((f) => f.title),
-  method: ABOUT.method.map((m) => ({ t: m.title, en: m.en, tools: m.tools })),
+  career: ABOUT.career.map((c) => ({ t: c.title, en: c.en, keys: c.keys, now: !!c.now })),
+  skills: ABOUT.skills.map((s) => ({ d: s.domain, en: s.en, items: s.items })),
   email: SITE.links.email,
   x: SITE.links.x,
   xHandle: SITE.links.xHandle,
@@ -17,7 +17,7 @@ const data = {
   motto: SITE.motto.join(''),
   flag: FLAG_B64,
 };
-const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
+const chips = ['whoami', 'career', 'skills', 'reports', 'contact', 'help'];
 ---
 
 <div class="term" data-term>
@@ -108,9 +108,8 @@ const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
       help: () => [
         dim('可用命令：'),
         [acc(pad('whoami', 10)), '我是谁'],
-        [acc(pad('focus', 10)), '研究方向'],
-        [acc(pad('method', 10)), '工作流程：捕获 → 分析 → 追踪 → 反制'],
-        [acc(pad('arsenal', 10)), '工具箱'],
+        [acc(pad('career', 10)), '安全轨迹'],
+        [acc(pad('skills', 10)), '技能图谱'],
         [acc(pad('reports', 10)), '公开报告'],
         [acc(pad('contact', 10)), '联系方式'],
         [acc(pad('motto', 10)), '信条'],
@@ -118,19 +117,18 @@ const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
         dim('（还有一些没写在这里的命令。保持好奇。）'),
       ],
       whoami: () => [
-        [acc('0x777'), ' — 网络安全从业者'],
-        '二进制安全 · 僵尸网络分析 · 黑灰产溯源打击',
+        [acc('0x777'), ' — 安全从业者，攻防出身'],
+        '逆向 · 威胁情报 · 业务安全 · 数据安全',
         dim(D.motto),
       ],
-      focus: () => D.focus.map((f: string, i: number) => [dim(`0${i + 1}  `), f]),
-      method: () =>
-        D.method.flatMap((m: any, i: number) => [
-          [acc(`0${i + 1} ${m.t}`), dim(` ${m.en}`)],
-          dim(`   ${m.tools.join(' · ')}`),
+      career: () =>
+        D.career.flatMap((c: any, i: number) => [
+          [acc(`0${i + 1} ${c.t}`), dim(` ${c.en}`), ...(c.now ? [acc('  ← now')] : [])],
+          dim(`   ${c.keys.join(' · ')}`),
         ]),
-      arsenal: () => [
-        dim('total 4'),
-        ...D.method.map((m: any) => [dim('drwxr-x---  '), acc(pad(`${m.en.toLowerCase()}/`, 10)), m.tools.join('  ')]),
+      skills: () => [
+        dim(`total ${D.skills.length}`),
+        ...D.skills.map((s: any) => [dim('drwxr-x---  '), acc(pad(s.d, 8)), s.items.join(' · ')]),
       ],
       reports: () =>
         D.reports.map((r: any) => [dim(`${r.id}  ${r.d}  `), link(r.t, r.u)]),
@@ -143,12 +141,12 @@ const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
       motto: () => [acc(D.motto)],
       ls: (args) => {
         const all = args.some((a) => a.startsWith('-') && a.includes('a'));
-        if (args.includes('arsenal') || args.includes('arsenal/')) return commands.arsenal([]);
+        if (args.includes('skills') || args.includes('skills/')) return commands.skills([]);
         return [
           [
             ...(all ? [dim('.  ..  '), acc('.flag  ')] : []),
-            acc('arsenal/  reports/  '),
-            'focus.txt  motto.txt  contact.txt',
+            acc('skills/  reports/  '),
+            'career.txt  motto.txt  contact.txt',
           ],
         ];
       },
@@ -156,10 +154,10 @@ const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
         const f = args[0] || '';
         if (f === '.flag')
           return [acc(D.flag), dim('# 这不是加密，只是编码。解出来以后：submit <flag>')];
-        if (f === 'focus.txt') return commands.focus([]);
+        if (f === 'career.txt') return commands.career([]);
         if (f === 'motto.txt') return commands.motto([]);
         if (f === 'contact.txt') return commands.contact([]);
-        if (f.startsWith('reports') || f.startsWith('arsenal')) return [`cat: ${f}: Is a directory`];
+        if (f.startsWith('reports') || f.startsWith('skills')) return [`cat: ${f}: Is a directory`];
         return [`cat: ${f || '缺少文件名'}: No such file or directory`];
       },
       cd: (args) => [`cd: permission denied: ${args[0] || '~'}`, dim('（你就待在这儿吧。）')],
@@ -186,7 +184,7 @@ const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
       },
     };
     commands.logout = commands.exit;
-    const visible = ['help', 'whoami', 'focus', 'method', 'arsenal', 'reports', 'contact', 'motto', 'clear', 'ls', 'cat', 'submit'];
+    const visible = ['help', 'whoami', 'career', 'skills', 'reports', 'contact', 'motto', 'clear', 'ls', 'cat', 'submit'];
 
     function run(raw: string) {
       const cmdline = raw.trim();

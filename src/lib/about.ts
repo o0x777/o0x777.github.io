@@ -1,64 +1,90 @@
 // Everything the About page says lives here — edit copy in this file only.
-// Facts come from the original About page and the two published reports.
+// De-identified on purpose: no employers, business lines, places or dates for
+// each career stage. Keep it that way when editing.
 
 export const ABOUT = {
-  lead:
-    '网络安全从业者，深耕二进制安全、僵尸网络分析与黑灰产溯源打击。日常是拆解恶意样本、追踪 C2 基础设施，再把藏在暗处的链条一环环拉到光下。目前在大型业务环境中，持续攻坚安全攻防与平台治理难题。',
+  lead: '从 CTF 逆向起步，先后深耕二进制安全、威胁情报与僵尸网络、业务安全与黑产对抗，如今专注安全治理与数据安全。',
+
+  /** One-line keyword path shown under the headline */
+  path: ['Reverse', 'Threat Intel', 'BizSec', 'Security BP', 'Data Security'],
 
   /** Case-file fields. `redacted: true` renders a classified bar instead of a value. */
   profile: [
     { k: '代号', en: 'HANDLE', v: '0x777' },
-    { k: '别名', en: 'ALIAS', v: '@0x7773' },
     { k: '真名', en: 'NAME', redacted: true, width: 7 },
+    { k: '雇主', en: 'EMPLOYER', redacted: true, width: 9 },
     { k: '所在', en: 'BASE', redacted: true, width: 4 },
-    { k: '方向', en: 'FOCUS', v: 'Binary · Botnet · Fraud' },
-    { k: '首份报告', en: 'FIRST REPORT', v: '2021.04.23' },
+    { k: '方向', en: 'FOCUS', v: '逆向 · 情报 · 风控 · 数据' },
+    { k: '当前', en: 'NOW', v: '数据安全' },
   ],
 
-  creed: [
-    { title: '保持好奇。', body: '任何一个样本都值得拆开看看：它从哪里来，和谁通信，想做什么。' },
-    { title: '保持隐秘。', body: '追踪者先要藏好自己。好的研究，从 OPSEC 开始。' },
-    { title: '追踪暗影。', body: '顺着 C2、域名与资金链路，把暗处的网络一点点画出来。' },
+  /** Career stages, oldest first. No dates or organisations. */
+  career: [
+    {
+      title: 'CTF · 逆向',
+      en: 'Reverse',
+      body: '从 CTF 起步，专攻 Android 与 Windows 逆向，深入二进制漏洞。',
+      keys: ['Android 逆向', 'Windows 逆向', '二进制漏洞'],
+    },
+    {
+      title: '威胁情报',
+      en: 'Threat Intel',
+      body: '跟踪活跃的 Botnet 家族，分析恶意样本，提取 C2 与 IOC。',
+      keys: ['Botnet 跟踪', '样本分析', 'C2 / IOC'],
+    },
+    {
+      title: '业务安全',
+      en: 'Biz Security',
+      body: '进入互联网甲方，正面对抗黑产：溯源打击，建设业务风控。',
+      keys: ['黑产溯源', '打击治理', '业务风控'],
+    },
+    {
+      title: '安全 BP',
+      en: 'Security BP',
+      body: '作为业务线安全 BP，统筹业务侧的整体安全与风险。',
+      keys: ['安全 BP', '安全治理', '风险评估'],
+    },
+    {
+      title: '数据安全',
+      en: 'Data Security',
+      body: '负责国际化业务的数据安全与合规。',
+      keys: ['数据安全', '跨境合规', '隐私保护'],
+      now: true,
+    },
   ],
 
-  method: [
+  /** Skills by domain — keywords only, kept deliberately short */
+  skills: [
     {
-      title: '捕获',
-      en: 'Capture',
-      body: '蜜罐、开源情报与网关流量，三条渠道捕获活跃样本。',
-      tools: ['Cowrie', 'Dionaea', 'Conpot', 'VirusTotal', 'YARA', 'URLhaus'],
+      domain: '逆向与漏洞',
+      en: 'Reverse & Vuln',
+      icon: 'chip',
+      items: ['Android 逆向', 'Windows 逆向', '脱壳与反混淆', '二进制漏洞', 'Fuzzing', 'IDA / Frida'],
     },
     {
-      title: '分析',
-      en: 'Analyze',
-      body: '按平台与架构分类，静态 + 动态分析，提取 C2、域名、哈希等 IOC。',
-      tools: ['IDA · IDAPython', 'radare2', 'Qiling', 'Unicorn', 'x86 / ARM / MIPS'],
-    },
-    {
-      title: '追踪',
-      en: 'Track',
-      body: '盯住 C2 基础设施与家族演化：IRC、DGA、Tor、P2P，一个版本都不放过。',
-      tools: ['Docker + eBPF 沙箱', '流量还原', 'DGA 预测'],
-    },
-    {
-      title: '反制',
-      en: 'Counter',
-      body: '抢注与预测 DGA 域名、攻陷 C2 面板、模拟下发自毁指令，让网络失去控制。',
-      tools: ['域名接管', 'C2 攻陷', '指令仿真'],
-    },
-  ],
-
-  focus: [
-    {
-      title: '威胁情报与僵尸网络追踪',
-      body: '样本分析、C2 追踪与家族演化。从 IRC 到 Tor，从 C/S 到 P2P，跟着僵尸网络一起进化。',
+      domain: '威胁情报',
+      en: 'Threat Intel',
       icon: 'graph',
-      featured: true,
+      items: ['Botnet 跟踪', '恶意样本分析', 'C2 / IOC', 'YARA', '蜜罐', '情报运营'],
     },
-    { title: '二进制漏洞挖掘与逆向分析', body: '在汇编层面理解程序真正做了什么。', icon: 'chip' },
-    { title: '黑灰产溯源与治理打击', body: '顺着基础设施与资金链路，溯源并协同打击。', icon: 'target' },
-    { title: '业务安全建设与防御', body: '把攻防经验沉淀为业务侧的防御体系。', icon: 'shield' },
-    { title: '安全 BP 与平台化', body: '安全 BP 机制与平台化能力建设，让安全能力规模化。', icon: 'layers' },
+    {
+      domain: '业务安全',
+      en: 'Biz Security',
+      icon: 'target',
+      items: ['黑产溯源', '反欺诈', '业务风控', '设备指纹', '账号安全', '策略与模型'],
+    },
+    {
+      domain: '安全治理',
+      en: 'Governance',
+      icon: 'shield',
+      items: ['安全 BP', '风险评估', '安全架构评审', 'SDL', '应急响应'],
+    },
+    {
+      domain: '数据安全',
+      en: 'Data Security',
+      icon: 'lock',
+      items: ['分类分级', '跨境数据合规', '隐私保护', '数据防泄漏', '权限治理'],
+    },
   ],
 
   /** Highlights per report, keyed by the post's `slug`. Numbers come from the reports themselves. */
@@ -83,8 +109,7 @@ export const ABOUT = {
   },
 
   contact: {
-    title: '有线索？发个信号。',
-    body: '威胁情报线索、样本交流、安全研究合作，都欢迎来信。',
+    body: '安全研究交流、威胁情报线索、业务安全与数据安全话题，都欢迎来信。',
   },
 };
 

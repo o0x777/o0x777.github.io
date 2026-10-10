@@ -3,10 +3,10 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 /** Everything a visitor reads outside of posts lives here. */
 export const SITE = {
   title: '0x777',
-  description: '0x777 的研究档案：二进制安全、僵尸网络分析与黑灰产溯源。',
+  description: '0x777 的安全档案：逆向、威胁情报、业务安全与数据安全。',
   motto: ['保持好奇，保持隐秘，', '追踪暗影。'],
   mottoEn: 'tracking the shadows, since 2021.',
-  lead: '0x777 的研究档案。专注二进制安全、僵尸网络分析与黑灰产溯源——拆解样本，追踪 C2，把藏在暗处的网络一点点画出来。',
+  lead: '0x777 的安全档案。从 CTF 逆向起步，走过威胁情报、业务安全与黑产对抗，如今专注安全治理与数据安全——在这里记录研究与思考。',
   author: '0x777',
   since: 2021,
   links: {
@@ -16,10 +16,10 @@ export const SITE = {
     github: 'https://github.com/o0x777',
   },
   focus: [
-    { title: '二进制安全', desc: '漏洞挖掘与逆向分析，从汇编层面理解程序真正做了什么。', icon: 'chip' },
-    { title: '僵尸网络', desc: '样本分析、C2 追踪与家族演化，持续跟踪活跃的 Botnet。', icon: 'graph' },
-    { title: '黑灰产溯源', desc: '顺着基础设施与资金链路，溯源并协同打击黑灰产团伙。', icon: 'target' },
-    { title: '业务安全', desc: '业务防御体系、安全 BP 机制与平台化能力建设。', icon: 'shield' },
+    { title: '逆向与漏洞', desc: 'Android / Windows 逆向与二进制漏洞，从 CTF 一路走来。', icon: 'chip' },
+    { title: '威胁情报', desc: 'Botnet 跟踪与恶意样本分析，追踪 C2 与家族演化。', icon: 'graph' },
+    { title: '业务安全', desc: '黑产溯源打击与业务风控，在真实业务里对抗黑灰产。', icon: 'target' },
+    { title: '数据安全', desc: '安全治理与国际化业务的数据安全、隐私合规。', icon: 'lock' },
   ],
 } as const;
 

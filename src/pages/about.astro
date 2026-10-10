@@ -4,35 +4,13 @@ import Icon from '../components/Icon.astro';
 import CaseFile from '../components/about/CaseFile.astro';
 import Terminal from '../components/about/Terminal.astro';
 import { ABOUT } from '../lib/about';
-import { SITE, dateParts, getPosts, postUrl, reportIds, wordCount } from '../lib/site';
+import { SITE, dateParts, getPosts, postUrl, reportIds } from '../lib/site';
 
 const posts = await getPosts();
 const ids = reportIds(posts);
-const oldest = posts.at(-1);
-const stats = [
-  { n: Number(oldest ? dateParts(oldest.data.pubDate).year : SITE.since), label: '首份报告', plain: true },
-  { n: posts.length, label: '份公开报告' },
-  { n: posts.reduce((sum, p) => sum + wordCount(p.body), 0), label: '字研究笔记' },
-  { n: 10, suffix: '+', label: '个到访国家' },
-];
-
-// Mini botnet for the featured focus card (deterministic)
-let seed = 0x0777;
-const rand = () => {
-  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-  return seed / 0x7fffffff;
-};
-const c2 = { x: 210, y: 92 };
-const bots = Array.from({ length: 26 }, () => ({ x: 40 + rand() * 340, y: 14 + rand() * 170 }));
-const peers = bots.flatMap((b, i) =>
-  bots
-    .map((o, j) => ({ j, d: Math.hypot(b.x - o.x, b.y - o.y) }))
-    .filter((o) => o.j > i && o.d < 62)
-    .map((o) => ({ a: b, b: bots[o.j] })),
-);
 ---
 
-<Base title="关于我" description="0x777 — 网络安全从业者，专注二进制安全、僵尸网络分析与黑灰产溯源打击。">
+<Base title="关于我" description="0x777 — 安全从业者，攻防出身：逆向、威胁情报、业务安全与数据安全。">
   <!-- ========== Hero ========== -->
   <section class="container hero">
     <div class="intro">
@@ -41,8 +19,18 @@ const peers = bots.flatMap((b, i) =>
         <span class="hi">你好，</span>
         <span>我是 <span class="handle mono" data-scramble>0x777</span>。</span>
       </h1>
-      <p class="lead" data-reveal style="--d:2">{ABOUT.lead}</p>
-      <div class="cta" data-reveal style="--d:3">
+      <p class="path mono" data-reveal style="--d:2" aria-label={`安全轨迹：${ABOUT.path.join('，')}`}>
+        {
+          ABOUT.path.map((p, i) => (
+            <>
+              {i > 0 && <span class="sep" aria-hidden="true">→</span>}
+              <span class:list={{ now: i === ABOUT.path.length - 1 }}>{p}</span>
+            </>
+          ))
+        }
+      </p>
+      <p class="lead" data-reveal style="--d:3">{ABOUT.lead}</p>
+      <div class="cta" data-reveal style="--d:4">
         <a class="btn btn-primary" href="#contact"><Icon name="mail" size={16} />发个信号</a>
         <a class="btn btn-ghost" href="#terminal">打开终端 <span class="mono prompt-glyph">›_</span></a>
       </div>
@@ -52,63 +40,30 @@ const peers = bots.flatMap((b, i) =>
     </div>
   </section>
 
-  <section class="container" aria-label="数据">
-    <dl class="stats" data-reveal>
-      {
-        stats.map((s) => (
-          <div>
-            <dt class="mono">
-              <span data-count={s.n} data-plain={s.plain ? '' : undefined}>
-                {s.plain ? s.n : s.n.toLocaleString('en-US')}
-              </span>
-              {s.suffix && <span class="suffix">{s.suffix}</span>}
-            </dt>
-            <dd>{s.label}</dd>
-          </div>
-        ))
-      }
-    </dl>
-  </section>
-
-  <!-- ========== 01 Creed ========== -->
-  <section class="container creed" aria-labelledby="creed-title">
-    <p class="eyebrow" id="creed-title"><span class="accent">01</span> — Creed · 信条</p>
-    <ol>
-      {
-        ABOUT.creed.map((c, i) => (
-          <li data-creed>
-            <span class="n mono">0{i + 1}</span>
-            <h2>{c.title}</h2>
-            <p>{c.body}</p>
-          </li>
-        ))
-      }
-    </ol>
-  </section>
-
-  <!-- ========== 02 Method ========== -->
-  <section class="container section" aria-labelledby="method-title">
+  <!-- ========== 01 Career ========== -->
+  <section class="container section" aria-labelledby="career-title">
     <div class="section-head" data-reveal>
       <div>
-        <p class="eyebrow"><span class="accent">02</span> — Method</p>
-        <h2 id="method-title">从一个样本，到一张网</h2>
+        <p class="eyebrow"><span class="accent">01</span> — Trajectory</p>
+        <h2 id="career-title">安全轨迹</h2>
       </div>
-      <p class="note">我的僵尸网络研究流程</p>
+      <p class="note">攻防出身，一路走到数据安全</p>
     </div>
-    <ol class="pipeline" data-reveal>
-      <span class="rail" aria-hidden="true"><span class="packet"></span></span>
+    <ol class="track" data-reveal>
+      <span class="rail" aria-hidden="true"><span class="fill"></span></span>
       {
-        ABOUT.method.map((m, i) => (
-          <li style={`--d:${i}`}>
+        ABOUT.career.map((c, i) => (
+          <li class:list={{ now: c.now }} style={`--d:${i}`}>
             <span class="node" aria-hidden="true" />
             <p class="idx mono">
-              0{i + 1} · {m.en}
+              0{i + 1} · {c.en}
+              {c.now && <span class="now-tag">NOW</span>}
             </p>
-            <h3>{m.title}</h3>
-            <p class="body">{m.body}</p>
-            <ul class="tools">
-              {m.tools.map((t) => (
-                <li class="mono">{t}</li>
+            <h3>{c.title}</h3>
+            <p class="body">{c.body}</p>
+            <ul class="keys">
+              {c.keys.map((k) => (
+                <li class="mono">{k}</li>
               ))}
             </ul>
           </li>
@@ -117,50 +72,44 @@ const peers = bots.flatMap((b, i) =>
     </ol>
   </section>
 
-  <!-- ========== 03 Focus ========== -->
-  <section class="container section" aria-labelledby="focus-title">
+  <!-- ========== 02 Skills ========== -->
+  <section class="container section" aria-labelledby="skills-title">
     <div class="section-head" data-reveal>
       <div>
-        <p class="eyebrow"><span class="accent">03</span> — Focus</p>
-        <h2 id="focus-title">研究方向</h2>
+        <p class="eyebrow"><span class="accent">02</span> — Skills</p>
+        <h2 id="skills-title">技能图谱</h2>
       </div>
     </div>
-    <ul class="bento">
+    <ul class="skills">
       {
-        ABOUT.focus.map((f, i) => (
-          <li class:list={['tile', `t${i}`, { featured: f.featured }]} data-spot data-reveal style={`--d:${i}`}>
-            <span class="tile-icon">
-              <Icon name={f.icon as any} size={20} />
-            </span>
-            <h3>{f.title}</h3>
-            <p>{f.body}</p>
-            {f.featured && (
-              <svg class="mini-net" viewBox="0 0 420 200" aria-hidden="true">
-                {peers.map((e) => (
-                  <line x1={e.a.x} y1={e.a.y} x2={e.b.x} y2={e.b.y} class="p2p" />
-                ))}
-                {bots.map((b) => (
-                  <line x1={c2.x} y1={c2.y} x2={b.x} y2={b.y} class="cs" />
-                ))}
-                {bots.map((b) => (
-                  <circle cx={b.x} cy={b.y} r="2.2" class="bot" />
-                ))}
-                <circle cx={c2.x} cy={c2.y} r="14" class="c2-ring" />
-                <circle cx={c2.x} cy={c2.y} r="5" class="c2" />
-              </svg>
-            )}
+        ABOUT.skills.map((s, i) => (
+          <li data-reveal style={`--d:${i}`}>
+            <div class="domain">
+              <span class="d-icon">
+                <Icon name={s.icon as any} size={19} />
+              </span>
+              <div>
+                <h3>{s.domain}</h3>
+                <p class="mono">{s.en}</p>
+              </div>
+            </div>
+            <ul class="items">
+              {s.items.map((it) => (
+                <li>{it}</li>
+              ))}
+            </ul>
           </li>
         ))
       }
     </ul>
   </section>
 
-  <!-- ========== 04 Reports ========== -->
+  <!-- ========== 03 Research ========== -->
   <section class="container section" aria-labelledby="reports-title">
     <div class="section-head" data-reveal>
       <div>
-        <p class="eyebrow"><span class="accent">04</span> — Reports</p>
-        <h2 id="reports-title">公开报告</h2>
+        <p class="eyebrow"><span class="accent">03</span> — Research</p>
+        <h2 id="reports-title">公开研究</h2>
       </div>
       <a class="link-arrow" href="/archives/">全部归档 <span>→</span></a>
     </div>
@@ -193,11 +142,11 @@ const peers = bots.flatMap((b, i) =>
     </div>
   </section>
 
-  <!-- ========== 05 Terminal ========== -->
+  <!-- ========== 04 Terminal ========== -->
   <section class="container section" id="terminal" aria-labelledby="term-title">
     <div class="section-head" data-reveal>
       <div>
-        <p class="eyebrow"><span class="accent">05</span> — Shell</p>
+        <p class="eyebrow"><span class="accent">04</span> — Shell</p>
         <h2 id="term-title">和我的终端聊聊</h2>
       </div>
       <p class="note">试试输入 <code class="mono">help</code></p>
@@ -205,11 +154,11 @@ const peers = bots.flatMap((b, i) =>
     <div data-reveal><Terminal /></div>
   </section>
 
-  <!-- ========== 06 Off the clock ========== -->
+  <!-- ========== 05 Off the clock ========== -->
   <section class="container section" aria-labelledby="life-title">
     <div class="section-head" data-reveal>
       <div>
-        <p class="eyebrow"><span class="accent">06</span> — Off the clock</p>
+        <p class="eyebrow"><span class="accent">05</span> — Off the clock</p>
         <h2 id="life-title">档案之外</h2>
       </div>
     </div>
@@ -251,11 +200,11 @@ const peers = bots.flatMap((b, i) =>
     </div>
   </section>
 
-  <!-- ========== 07 Contact ========== -->
+  <!-- ========== 06 Contact ========== -->
   <section class="container section" id="contact" aria-labelledby="contact-title">
     <div class="signal" data-reveal>
       <div class="radar" aria-hidden="true"><span></span><span></span><span></span></div>
-      <p class="eyebrow"><span class="accent">07</span> — Contact</p>
+      <p class="eyebrow"><span class="accent">06</span> — Contact</p>
       <h2 id="contact-title">有线索？<br />发个<em>信号</em>。</h2>
       <p class="sub">{ABOUT.contact.body}</p>
       <div class="mailbox">
@@ -300,36 +249,6 @@ const peers = bots.flatMap((b, i) =>
     requestAnimationFrame(tick);
   }
 
-  // Count-up for the stats strip
-  const stats = document.querySelector('.stats');
-  if (stats) {
-    const run = () =>
-      stats.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
-        const target = Number(el.dataset.count);
-        const plain = el.hasAttribute('data-plain');
-        const fmt = (v: number) => (plain ? String(v) : v.toLocaleString('en-US'));
-        if (reduced || plain) return void (el.textContent = fmt(target));
-        const t0 = performance.now();
-        const step = (now: number) => {
-          const k = Math.min(1, (now - t0) / 1400);
-          el.textContent = fmt(Math.round(target * (1 - Math.pow(1 - k, 4))));
-          if (k < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      });
-    new IntersectionObserver((entries, io) => {
-      if (entries[0].isIntersecting) (run(), io.disconnect());
-    }).observe(stats);
-  }
-
-  // Creed: each line lights up as it crosses the middle of the screen
-  const lines = document.querySelectorAll('[data-creed]');
-  const creedIO = new IntersectionObserver(
-    (entries) => entries.forEach((e) => e.target.toggleAttribute('data-lit', e.isIntersecting)),
-    { rootMargin: '-38% 0px -38% 0px' },
-  );
-  lines.forEach((l) => creedIO.observe(l));
-
   // Copy e-mail
   document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) =>
     btn.addEventListener('click', async () => {
@@ -368,7 +287,7 @@ const peers = bots.flatMap((b, i) =>
   h1 {
     display: flex;
     flex-direction: column;
-    margin: 22px 0 24px;
+    margin: 22px 0 22px;
     font-size: clamp(38px, 6.2vw, 72px);
     font-weight: 600;
     line-height: 1.1;
@@ -386,8 +305,28 @@ const peers = bots.flatMap((b, i) =>
     letter-spacing: -0.05em;
     text-shadow: 0 0 36px var(--glow);
   }
+  .path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0 0 22px;
+    color: var(--fg-2);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .path .sep {
+    color: var(--fg-3);
+  }
+  .path .now {
+    padding: 2px 8px;
+    border: 1px solid var(--accent-line);
+    border-radius: 6px;
+    color: var(--accent-text);
+    background: var(--accent-soft);
+  }
   .lead {
-    max-width: 34em;
+    max-width: 32em;
     margin: 0;
     color: var(--fg-2);
     font-size: clamp(16px, 1.6vw, 18px);
@@ -402,92 +341,6 @@ const peers = bots.flatMap((b, i) =>
   .prompt-glyph {
     color: var(--accent-text);
     font-weight: 600;
-  }
-
-  /* ---------- Stats ---------- */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: clamp(64px, 9vw, 104px) 0 0;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-  .stats div {
-    padding: 28px 0 28px 28px;
-    border-left: 1px solid var(--line);
-  }
-  .stats div:first-child {
-    padding-left: 0;
-    border-left: 0;
-  }
-  .stats dt {
-    font-size: clamp(34px, 4.6vw, 52px);
-    font-weight: 500;
-    line-height: 1;
-    letter-spacing: -0.04em;
-    font-variant-numeric: tabular-nums;
-  }
-  .stats .suffix {
-    color: var(--accent);
-  }
-  .stats dd {
-    margin: 12px 0 0;
-    color: var(--fg-3);
-    font-size: 14px;
-  }
-
-  /* ---------- Creed ---------- */
-  .creed {
-    padding-top: clamp(96px, 14vw, 180px);
-  }
-  .creed ol {
-    margin: 32px 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  .creed li {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    column-gap: 16px;
-    align-items: baseline;
-    padding: clamp(20px, 3vw, 36px) 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .creed .n {
-    grid-row: span 2;
-    color: var(--fg-3);
-    font-size: 13px;
-    transition: color 0.5s;
-  }
-  .creed h2 {
-    margin: 0;
-    font-size: clamp(40px, 8.4vw, 104px);
-    font-weight: 600;
-    line-height: 1.05;
-    letter-spacing: -0.045em;
-    transition:
-      color 0.6s var(--ease),
-      text-shadow 0.6s;
-  }
-  .creed p {
-    max-width: 30em;
-    margin: 14px 0 0;
-    color: var(--fg-2);
-    font-size: clamp(15px, 1.6vw, 18px);
-    transition: opacity 0.6s;
-  }
-  /* Dim until lit (only when JS can light them up) */
-  :global(.js) .creed li:not([data-lit]) h2 {
-    color: color-mix(in oklab, var(--fg) 18%, var(--bg));
-  }
-  :global(.js) .creed li:not([data-lit]) p {
-    opacity: 0.35;
-  }
-  .creed li[data-lit] .n {
-    color: var(--accent-text);
-  }
-  .creed li[data-lit] h2 {
-    text-shadow: 0 0 60px color-mix(in oklab, var(--glow) 40%, transparent);
   }
 
   /* ---------- Section scaffolding ---------- */
@@ -507,11 +360,11 @@ const peers = bots.flatMap((b, i) =>
     font-size: 13px;
   }
 
-  /* ---------- Method pipeline ---------- */
-  .pipeline {
+  /* ---------- Career track ---------- */
+  .track {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 20px;
     margin: 12px 0 0;
     padding: 0;
@@ -523,53 +376,37 @@ const peers = bots.flatMap((b, i) =>
     left: 8px;
     right: 8px;
     height: 1px;
-    background: linear-gradient(to right, var(--accent-line), var(--line-strong) 60%, var(--line));
-    overflow: hidden;
+    background: var(--line-strong);
   }
-  .packet {
+  .fill {
     position: absolute;
-    top: -1px;
-    left: 0;
-    width: 64px;
-    height: 3px;
-    border-radius: 3px;
-    background: linear-gradient(to right, transparent, var(--accent));
-    box-shadow: 0 0 12px var(--glow);
-    opacity: 0;
+    inset: 0;
+    background: linear-gradient(to right, var(--line-strong), var(--accent));
+    box-shadow: 0 0 10px var(--glow);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 1.6s 0.2s var(--ease);
   }
-  .pipeline[data-in] .packet {
-    animation: travel 3.6s 0.6s var(--ease) infinite;
+  .track[data-in] .fill {
+    transform: none;
   }
-  @keyframes travel {
-    0% {
-      transform: translateX(-64px);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    85% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(min(100vw, 1160px));
-      opacity: 0;
-    }
+  :global(html:not(.js)) .fill {
+    transform: none;
   }
-  .pipeline > li {
+  .track > li {
     position: relative;
     padding-top: 40px;
   }
-  /* Stages light up one after another */
-  :global(.js) .pipeline > li {
+  /* Stages light up one after another, following the fill */
+  :global(.js) .track > li {
     opacity: 0;
     transform: translateY(14px);
     transition:
       opacity 0.7s var(--ease),
       transform 0.7s var(--ease);
-    transition-delay: calc(0.15s + var(--d) * 0.14s);
+    transition-delay: calc(0.2s + var(--d) * 0.22s);
   }
-  :global(.js) .pipeline[data-in] > li {
+  :global(.js) .track[data-in] > li {
     opacity: 1;
     transform: none;
   }
@@ -579,7 +416,7 @@ const peers = bots.flatMap((b, i) =>
     left: 0;
     width: 15px;
     height: 15px;
-    border: 1px solid var(--accent-line);
+    border: 1px solid var(--line-strong);
     border-radius: 50%;
     background: var(--bg);
   }
@@ -588,29 +425,67 @@ const peers = bots.flatMap((b, i) =>
     position: absolute;
     inset: 4px;
     border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--glow);
+    background: var(--fg-3);
   }
-  .pipeline .idx {
+  .now .node {
+    border-color: var(--accent-line);
+  }
+  .now .node::after {
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--glow);
+  }
+  .now .node::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    animation: ping 2.2s var(--ease) infinite;
+  }
+  @keyframes ping {
+    from {
+      transform: scale(0.5);
+      opacity: 1;
+    }
+    to {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+  }
+  .idx {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 10px;
     color: var(--fg-3);
-    font-size: 11.5px;
+    font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  .pipeline h3 {
+  .now-tag {
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 9.5px;
+    font-weight: 700;
+  }
+  .track h3 {
     margin: 0 0 10px;
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 600;
     letter-spacing: -0.02em;
   }
-  .pipeline .body {
-    margin: 0 0 18px;
+  .now h3 {
+    color: var(--accent-text);
+  }
+  .track .body {
+    margin: 0 0 16px;
     color: var(--fg-2);
-    font-size: 14.5px;
+    font-size: 14px;
     line-height: 1.8;
   }
-  .tools {
+  .keys {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -618,139 +493,96 @@ const peers = bots.flatMap((b, i) =>
     padding: 0;
     list-style: none;
   }
-  .tools li {
-    padding: 4px 9px;
+  .keys li {
+    padding: 3px 8px;
     border: 1px solid var(--line);
     border-radius: 6px;
     background: var(--bg-elev);
     color: var(--fg-2);
     font-size: 11.5px;
   }
+  .now .keys li {
+    border-color: var(--accent-line);
+    color: var(--accent-text);
+  }
 
-  /* ---------- Focus bento ---------- */
-  .bento {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-areas:
-      'f f a'
-      'f f b'
-      'c d d';
-    gap: 16px;
+  /* ---------- Skills matrix ---------- */
+  .skills {
     margin: 0;
     padding: 0;
     list-style: none;
+    border-top: 1px solid var(--line);
   }
-  .t0 {
-    grid-area: f;
+  .skills > li {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+    padding: 22px 16px;
+    margin: 0 -16px;
+    border-bottom: 1px solid var(--line);
+    border-radius: 14px;
+    transition: background-color 0.25s;
   }
-  .t1 {
-    grid-area: a;
+  .skills > li:hover {
+    background: var(--bg-hover);
   }
-  .t2 {
-    grid-area: b;
-  }
-  .t3 {
-    grid-area: c;
-  }
-  .t4 {
-    grid-area: d;
-  }
-  .tile {
-    position: relative;
+  .domain {
     display: flex;
-    flex-direction: column;
-    padding: 26px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: var(--bg-elev);
-    overflow: hidden;
-    transition: border-color 0.3s;
+    align-items: center;
+    gap: 16px;
   }
-  .tile:hover {
-    border-color: var(--line-strong);
-  }
-  .tile-icon {
+  .d-icon {
     display: grid;
     place-items: center;
+    flex: none;
     width: 42px;
     height: 42px;
-    margin-bottom: 28px;
     border: 1px solid var(--line-strong);
     border-radius: 11px;
     color: var(--fg-2);
     transition:
-      color 0.3s,
-      border-color 0.3s;
+      color 0.25s,
+      border-color 0.25s;
   }
-  .tile:hover .tile-icon {
+  .skills > li:hover .d-icon {
     color: var(--accent);
     border-color: var(--accent-line);
   }
-  .tile h3 {
-    margin: 0 0 8px;
+  .domain h3 {
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
-    letter-spacing: -0.01em;
   }
-  .tile p {
+  .domain p {
+    margin: 2px 0 0;
+    color: var(--fg-3);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .items li {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-elev);
     color: var(--fg-2);
-    font-size: 14.5px;
-    line-height: 1.75;
+    font-size: 14px;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
   }
-  .featured {
-    padding: 32px;
-    background:
-      radial-gradient(120% 80% at 70% 100%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 60%),
-      var(--bg-elev);
-  }
-  .featured h3 {
-    font-size: clamp(22px, 2.6vw, 28px);
-    letter-spacing: -0.02em;
-  }
-  .featured p {
-    max-width: 26em;
-    font-size: 15.5px;
-  }
-  .mini-net {
-    width: 100%;
-    margin-top: auto;
-    padding-top: 24px;
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%);
-    mask-image: linear-gradient(to bottom, transparent, #000 30%);
-  }
-  .mini-net .p2p {
-    stroke: var(--net);
-    stroke-opacity: 0.18;
-    stroke-width: 1;
-  }
-  .mini-net .cs {
-    stroke: var(--accent);
-    stroke-opacity: 0.22;
-    stroke-width: 1;
-    stroke-dasharray: 3 5;
-  }
-  .featured:hover .mini-net .cs {
-    animation: flow 1.4s linear infinite;
-    stroke-opacity: 0.5;
-  }
-  @keyframes flow {
-    to {
-      stroke-dashoffset: -16;
-    }
-  }
-  .mini-net .bot {
-    fill: var(--net);
-    opacity: 0.7;
-  }
-  .mini-net .c2 {
-    fill: var(--accent);
-    filter: drop-shadow(0 0 6px var(--glow));
-  }
-  .mini-net .c2-ring {
-    fill: none;
-    stroke: var(--accent);
-    stroke-opacity: 0.45;
+  .skills > li:hover .items li {
+    color: var(--fg);
+    border-color: var(--line-strong);
   }
 
   /* ---------- Reports ---------- */
@@ -857,7 +689,6 @@ const peers = bots.flatMap((b, i) =>
     line-height: 1.75;
   }
 
-  /* Boarding pass */
   .pass-head {
     display: flex;
     justify-content: space-between;
@@ -925,7 +756,6 @@ const peers = bots.flatMap((b, i) =>
     color: var(--fg);
   }
 
-  /* Arcade screen */
   .screen {
     position: relative;
     padding: 14px 16px 16px;
@@ -985,7 +815,6 @@ const peers = bots.flatMap((b, i) =>
     color: var(--fg);
   }
 
-  /* Book spines */
   .books {
     display: flex;
     align-items: flex-end;
@@ -1161,26 +990,21 @@ const peers = bots.flatMap((b, i) =>
   }
 
   /* ---------- Responsive ---------- */
+  @media (max-width: 1100px) {
+    .track {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      row-gap: 44px;
+    }
+    .rail {
+      display: none;
+    }
+  }
   @media (max-width: 1000px) {
     .hero {
       grid-template-columns: minmax(0, 1fr);
     }
     .file {
       max-width: 520px;
-    }
-    .pipeline {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      row-gap: 40px;
-    }
-    .rail {
-      display: none;
-    }
-    .bento {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-areas:
-        'f f'
-        'a b'
-        'c d';
     }
     .life {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1189,36 +1013,32 @@ const peers = bots.flatMap((b, i) =>
       grid-column: span 2;
     }
   }
-  @media (max-width: 680px) {
-    .stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .stats div:nth-child(3) {
-      padding-left: 0;
-      border-left: 0;
-    }
-    .stats div:nth-child(n + 3) {
-      border-top: 1px solid var(--line);
-    }
-    .creed li {
-      grid-template-columns: 36px minmax(0, 1fr);
-    }
-    .pipeline {
+  @media (max-width: 760px) {
+    .skills > li {
       grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      margin: 0;
+      padding: 22px 0;
+      border-radius: 0;
+    }
+    .skills > li:hover {
+      background: none;
+    }
+  }
+  @media (max-width: 680px) {
+    .track {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 36px;
       padding-left: 28px;
-      border-left: 1px solid var(--accent-line);
+      border-left: 1px solid var(--line-strong);
       margin-left: 7px;
     }
-    .pipeline > li {
+    .track > li {
       padding-top: 0;
     }
     .node {
       left: -36px;
       top: 2px;
-    }
-    .bento {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: 'f' 'a' 'b' 'c' 'd';
     }
     .reports,
     .life {
@@ -1230,6 +1050,9 @@ const peers = bots.flatMap((b, i) =>
     .mailbox {
       display: flex;
       padding-left: 16px;
+    }
+    .items li {
+      font-size: 13.5px;
     }
   }
 </style>
