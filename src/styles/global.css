@@ -351,6 +351,13 @@ a.chip:hover {
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
+@media (max-width: 640px) {
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
 
 /* Page header used by archive / tags / about */
 .page-head {
@@ -387,6 +394,20 @@ a.chip:hover {
 }
 [data-spot]:hover::before {
   opacity: 1;
+}
+
+/* Scroll reveal (see Base.astro). Without JS everything stays visible. */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.8s var(--ease),
+    transform 0.8s var(--ease);
+  transition-delay: calc(var(--d, 0) * 90ms);
+}
+.js [data-reveal][data-in] {
+  opacity: 1;
+  transform: none;
 }
 
 /* ---------- Post row (home, archive, tag pages) ---------- */

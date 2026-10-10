@@ -1,0 +1,413 @@
+---
+// A small interactive shell for the About page. Output is built with
+// textContent only (no HTML injection). There is a CTF flag hidden in it.
+import { ABOUT, FLAG_B64 } from '../../lib/about';
+import { BUILD_DATE, SITE, formatDate, getPosts, postUrl, reportIds } from '../../lib/site';
+
+const posts = await getPosts();
+const ids = reportIds(posts);
+const data = {
+  reports: posts.map((p) => ({ id: ids.get(p.id), t: p.data.title, u: postUrl(p), d: formatDate(p.data.pubDate, '.') })),
+  focus: ABOUT.focus.map((f) => f.title),
+  method: ABOUT.method.map((m) => ({ t: m.title, en: m.en, tools: m.tools })),
+  email: SITE.links.email,
+  x: SITE.links.x,
+  xHandle: SITE.links.xHandle,
+  github: SITE.links.github,
+  motto: SITE.motto.join(''),
+  flag: FLAG_B64,
+};
+const chips = ['whoami', 'focus', 'method', 'reports', 'contact', 'help'];
+---
+
+<div class="term" data-term>
+  <div class="bar mono">
+    <span><span class="host">0x777@shadow</span>:~/about</span>
+    <span class="hint">zsh · 点击此处输入</span>
+  </div>
+
+  <div class="out mono" role="log" aria-live="polite" aria-label="终端输出" data-out>
+    <p class="dim">Last login: {BUILD_DATE} on ttys007 from 127.0.0.1</p>
+    <p>欢迎来到 <span class="acc">0x777</span> 的终端。输入 <span class="acc">help</span> 查看可用命令，或点下面的按钮。</p>
+  </div>
+
+  <form class="line mono" data-form>
+    <label class="prompt" for="term-input"><span class="host">0x777@shadow</span>:~$</label>
+    <input
+      id="term-input"
+      type="text"
+      autocomplete="off"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
+      enterkeyhint="send"
+      aria-label="输入命令"
+      data-input
+    />
+  </form>
+
+  <div class="chips">
+    {
+      chips.map((c) => (
+        <button type="button" class="chip-btn mono" data-cmd={c}>
+          {c}
+        </button>
+      ))
+    }
+  </div>
+</div>
+
+<script type="application/json" id="term-data" set:html={JSON.stringify(data)} />
+
+<script>
+  type Seg = string | { text: string; cls?: string; href?: string };
+  type Line = Seg | Seg[];
+
+  const root = document.querySelector<HTMLElement>('[data-term]');
+  const raw = document.getElementById('term-data');
+  if (root && raw) init(root, JSON.parse(raw.textContent || '{}'));
+
+  function init(root: HTMLElement, D: any) {
+    const out = root.querySelector<HTMLElement>('[data-out]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const input = root.querySelector<HTMLInputElement>('[data-input]')!;
+    const history: string[] = [];
+    let hIndex = 0;
+    let busy = false;
+
+    const acc = (text: string): Seg => ({ text, cls: 'acc' });
+    const dim = (text: string): Seg => ({ text, cls: 'dim' });
+    const link = (text: string, href: string): Seg => ({ text, href, cls: 'lnk' });
+
+    function print(lines: Line[], cls = '') {
+      for (const line of lines) {
+        const p = document.createElement('p');
+        if (cls) p.className = cls;
+        for (const seg of Array.isArray(line) ? line : [line]) {
+          if (typeof seg === 'string') {
+            p.append(seg);
+            continue;
+          }
+          const el = document.createElement(seg.href ? 'a' : 'span');
+          el.textContent = seg.text;
+          if (seg.cls) el.className = seg.cls;
+          if (seg.href) {
+            (el as HTMLAnchorElement).href = seg.href;
+            if (/^https?:/.test(seg.href)) (el as HTMLAnchorElement).target = '_blank';
+          }
+          p.append(el);
+        }
+        out.append(p);
+      }
+      out.scrollTop = out.scrollHeight;
+    }
+
+    const pad = (s: string, n: number) => s + ' '.repeat(Math.max(1, n - [...s].length));
+
+    const commands: Record<string, (args: string[]) => Line[] | void> = {
+      help: () => [
+        dim('可用命令：'),
+        [acc(pad('whoami', 10)), '我是谁'],
+        [acc(pad('focus', 10)), '研究方向'],
+        [acc(pad('method', 10)), '工作流程：捕获 → 分析 → 追踪 → 反制'],
+        [acc(pad('arsenal', 10)), '工具箱'],
+        [acc(pad('reports', 10)), '公开报告'],
+        [acc(pad('contact', 10)), '联系方式'],
+        [acc(pad('motto', 10)), '信条'],
+        [acc(pad('clear', 10)), '清屏'],
+        dim('（还有一些没写在这里的命令。保持好奇。）'),
+      ],
+      whoami: () => [
+        [acc('0x777'), ' — 网络安全从业者'],
+        '二进制安全 · 僵尸网络分析 · 黑灰产溯源打击',
+        dim(D.motto),
+      ],
+      focus: () => D.focus.map((f: string, i: number) => [dim(`0${i + 1}  `), f]),
+      method: () =>
+        D.method.flatMap((m: any, i: number) => [
+          [acc(`0${i + 1} ${m.t}`), dim(` ${m.en}`)],
+          dim(`   ${m.tools.join(' · ')}`),
+        ]),
+      arsenal: () => [
+        dim('total 4'),
+        ...D.method.map((m: any) => [dim('drwxr-x---  '), acc(pad(`${m.en.toLowerCase()}/`, 10)), m.tools.join('  ')]),
+      ],
+      reports: () =>
+        D.reports.map((r: any) => [dim(`${r.id}  ${r.d}  `), link(r.t, r.u)]),
+      contact: () => [
+        [dim(pad('email', 8)), link(D.email, `mailto:${D.email}`)],
+        [dim(pad('x', 8)), link(D.xHandle, D.x)],
+        [dim(pad('github', 8)), link(D.github.replace('https://', ''), D.github)],
+        [dim(pad('rss', 8)), link('/rss.xml', '/rss.xml')],
+      ],
+      motto: () => [acc(D.motto)],
+      ls: (args) => {
+        const all = args.some((a) => a.startsWith('-') && a.includes('a'));
+        if (args.includes('arsenal') || args.includes('arsenal/')) return commands.arsenal([]);
+        return [
+          [
+            ...(all ? [dim('.  ..  '), acc('.flag  ')] : []),
+            acc('arsenal/  reports/  '),
+            'focus.txt  motto.txt  contact.txt',
+          ],
+        ];
+      },
+      cat: (args) => {
+        const f = args[0] || '';
+        if (f === '.flag')
+          return [acc(D.flag), dim('# 这不是加密，只是编码。解出来以后：submit <flag>')];
+        if (f === 'focus.txt') return commands.focus([]);
+        if (f === 'motto.txt') return commands.motto([]);
+        if (f === 'contact.txt') return commands.contact([]);
+        if (f.startsWith('reports') || f.startsWith('arsenal')) return [`cat: ${f}: Is a directory`];
+        return [`cat: ${f || '缺少文件名'}: No such file or directory`];
+      },
+      cd: (args) => [`cd: permission denied: ${args[0] || '~'}`, dim('（你就待在这儿吧。）')],
+      submit: (args) => {
+        const guess = args.join(' ').trim();
+        let ok = false;
+        try {
+          ok = btoa(guess) === D.flag;
+        } catch {}
+        return ok
+          ? [acc('✓ 正确。'), '你拿到了 flag。保持好奇——欢迎来信聊聊：', link(D.email, `mailto:${D.email}`)]
+          : [`✗ 不对：${guess || '（空）'}`, dim('提示：ls -a 看看有没有隐藏文件。')];
+      },
+      echo: (args) => [args.join(' ')],
+      pwd: () => ['/home/0x777/about'],
+      date: () => [new Date().toLocaleString('zh-CN', { hour12: false })],
+      uname: () => ['ShadowOS 0x777 7.7.7 #1 SMP x86_64 arm mips GNU/Linux'],
+      history: () => history.map((h, i) => [dim(String(i + 1).padStart(4) + '  '), h]),
+      sudo: () => ['0x777 is not in the sudoers file. This incident will be reported.'],
+      rm: () => ['rm: 暗影不可删除。'],
+      exit: () => ['logout', dim('开个玩笑——暗影还没追完。')],
+      clear: () => {
+        out.replaceChildren();
+      },
+    };
+    commands.logout = commands.exit;
+    const visible = ['help', 'whoami', 'focus', 'method', 'arsenal', 'reports', 'contact', 'motto', 'clear', 'ls', 'cat', 'submit'];
+
+    function run(raw: string) {
+      const cmdline = raw.trim();
+      print([[{ text: '0x777@shadow', cls: 'host' }, ':~$ ', cmdline]], 'echo');
+      if (!cmdline) return;
+      history.push(cmdline);
+      hIndex = history.length;
+      const [name, ...args] = cmdline.split(/\s+/);
+      const fn = commands[name.toLowerCase()];
+      const result = fn ? fn(args) : [`zsh: command not found: ${name}`, dim('输入 help 查看可用命令')];
+      if (result) print(result);
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (busy) return;
+      run(input.value);
+      input.value = '';
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' && history.length) {
+        e.preventDefault();
+        hIndex = Math.max(0, hIndex - 1);
+        input.value = history[hIndex] ?? '';
+      } else if (e.key === 'ArrowDown' && history.length) {
+        e.preventDefault();
+        hIndex = Math.min(history.length, hIndex + 1);
+        input.value = history[hIndex] ?? '';
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (!v || v.includes(' ')) return;
+        const hits = visible.filter((c) => c.startsWith(v.toLowerCase()));
+        if (hits.length === 1) input.value = hits[0] + ' ';
+        else if (hits.length > 1) print([dim(hits.join('   '))]);
+      } else if (e.key === 'l' && e.ctrlKey) {
+        e.preventDefault();
+        out.replaceChildren();
+      } else if (e.key === 'c' && e.ctrlKey && input.selectionStart === input.selectionEnd) {
+        // Ctrl+C with nothing selected = interrupt (with a selection it stays copy)
+        print([[{ text: '0x777@shadow', cls: 'host' }, ':~$ ', input.value, '^C']], 'echo');
+        input.value = '';
+      }
+    });
+
+    // Buttons type the command out, then run it
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    root.querySelectorAll<HTMLButtonElement>('[data-cmd]').forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        if (busy) return;
+        busy = true;
+        const cmd = btn.dataset.cmd!;
+        input.value = '';
+        for (const ch of cmd) {
+          input.value += ch;
+          if (!reduced) await new Promise((r) => setTimeout(r, 38));
+        }
+        run(cmd);
+        input.value = '';
+        busy = false;
+      }),
+    );
+
+    // Clicking the terminal focuses the prompt (unless the user is selecting text or following a link)
+    root.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      if (t.closest('a, button') || getSelection()?.toString()) return;
+      input.focus({ preventScroll: true });
+    });
+  }
+</script>
+
+<style>
+  /* The terminal stays dark in both themes, like a real one */
+  .term {
+    --t-bg: #040705;
+    --t-fg: #c9eed6;
+    --t-dim: #6b8274;
+    --t-acc: #39ff88;
+    --t-line: rgb(150 255 190 / 0.1);
+    position: relative;
+    border: 1px solid var(--t-line);
+    border-radius: 16px;
+    background: var(--t-bg);
+    color: var(--t-fg);
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.4),
+      0 30px 80px -24px rgb(0 0 0 / 0.7),
+      0 0 80px -40px var(--glow);
+    overflow: hidden;
+    cursor: text;
+  }
+  /* CRT scanlines */
+  .term::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+  }
+
+  .bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--t-line);
+    color: var(--t-dim);
+    font-size: 12px;
+  }
+  .host {
+    color: var(--t-acc);
+  }
+  .hint {
+    opacity: 0.8;
+  }
+
+  .out {
+    height: 340px;
+    padding: 16px 18px 4px;
+    overflow-y: auto;
+    font-size: 13.5px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    scrollbar-width: thin;
+    scrollbar-color: var(--t-line) transparent;
+  }
+  .out :global(p) {
+    margin: 0;
+  }
+  .out :global(.echo) {
+    margin-top: 10px;
+    color: var(--t-fg);
+  }
+  .out :global(.acc),
+  .out :global(.host) {
+    color: var(--t-acc);
+    text-shadow: 0 0 10px rgb(57 255 136 / 0.35);
+  }
+  .out :global(.dim) {
+    color: var(--t-dim);
+  }
+  .out :global(.lnk) {
+    color: var(--t-acc);
+    text-decoration: underline;
+    text-decoration-color: rgb(57 255 136 / 0.4);
+    text-underline-offset: 3px;
+  }
+  .out :global(.lnk:hover) {
+    text-decoration-color: currentColor;
+  }
+
+  .line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 18px 16px;
+    font-size: 13.5px;
+  }
+  .prompt {
+    flex: none;
+    color: var(--t-fg);
+  }
+  .line input {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--t-fg);
+    font: inherit;
+    caret-color: var(--t-acc);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 18px 16px;
+    border-top: 1px solid var(--t-line);
+  }
+  .chip-btn {
+    position: relative;
+    z-index: 1;
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid var(--t-line);
+    border-radius: 999px;
+    background: rgb(150 255 190 / 0.04);
+    color: var(--t-dim);
+    font-size: 12px;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .chip-btn:hover {
+    color: var(--t-acc);
+    border-color: rgb(57 255 136 / 0.4);
+    background: rgb(57 255 136 / 0.08);
+  }
+
+  @media (max-width: 640px) {
+    .out {
+      height: 300px;
+      font-size: 12.5px;
+    }
+    .line {
+      font-size: 12.5px;
+    }
+    .prompt .host,
+    .hint {
+      display: none;
+    }
+    /* iOS zooms into inputs under 16px */
+    .line input {
+      font-size: 16px;
+    }
+  }
+</style>
