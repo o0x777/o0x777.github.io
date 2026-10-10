@@ -102,14 +102,16 @@ const chips = ['whoami', 'career', 'skills', 'reports', 'contact', 'help'];
       out.scrollTop = out.scrollHeight;
     }
 
-    const pad = (s: string, n: number) => s + ' '.repeat(Math.max(1, n - [...s].length));
+    // Pad to n terminal columns; CJK characters take two columns in a monospace font
+    const width = (s: string) => [...s].reduce((w, ch) => w + (/[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 2 : 1), 0);
+    const pad = (s: string, n: number) => s + ' '.repeat(Math.max(1, n - width(s)));
 
     const commands: Record<string, (args: string[]) => Line[] | void> = {
       help: () => [
         dim('可用命令：'),
         [acc(pad('whoami', 10)), '我是谁'],
         [acc(pad('career', 10)), '安全轨迹'],
-        [acc(pad('skills', 10)), '技能图谱'],
+        [acc(pad('skills', 10)), '技能'],
         [acc(pad('reports', 10)), '公开报告'],
         [acc(pad('contact', 10)), '联系方式'],
         [acc(pad('motto', 10)), '信条'],
@@ -128,7 +130,7 @@ const chips = ['whoami', 'career', 'skills', 'reports', 'contact', 'help'];
         ]),
       skills: () => [
         dim(`total ${D.skills.length}`),
-        ...D.skills.map((s: any) => [dim('drwxr-x---  '), acc(pad(s.d, 8)), s.items.join(' · ')]),
+        ...D.skills.map((s: any) => [dim('drwxr-x---  '), acc(pad(s.d, 12)), s.items.join(' · ')]),
       ],
       reports: () =>
         D.reports.map((r: any) => [dim(`${r.id}  ${r.d}  `), link(r.t, r.u)]),
