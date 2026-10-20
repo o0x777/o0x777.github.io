@@ -1,0 +1,289 @@
+---
+import Tool from '../../layouts/Tool.astro';
+---
+
+<Tool slug="ioc">
+  <div class="cols-2">
+    <section class="pane">
+      <div class="pane-bar">
+        <span>Input</span>
+        <div class="pane-acts">
+          <button class="tbtn" type="button" data-sample>示例</button>
+          <button class="tbtn" type="button" data-clear>清空</button>
+        </div>
+      </div>
+      <textarea
+        class="tarea"
+        id="ioc-in"
+        spellcheck="false"
+        placeholder="粘贴威胁报告、日志、邮件头……已 defang 的 hxxp / [.] 也认得。"
+        aria-label="待提取文本"></textarea>
+    </section>
+
+    <section class="pane">
+      <div class="pane-bar">
+        <span><span class="n" data-total>0</span> 个指标</span>
+        <div class="pane-acts">
+          <button class="tbtn" type="button" data-defang aria-pressed="true">Defang</button>
+          <button class="tbtn primary" type="button" data-copy-all disabled>复制全部</button>
+        </div>
+      </div>
+      <div data-out>
+        <p class="empty">等待输入</p>
+      </div>
+    </section>
+  </div>
+  <p class="hint">
+    自动识别 URL、域名、IPv4、邮箱、MD5 / SHA1 / SHA256 / SHA512、CVE 与 ATT&CK 技术编号，去重并按类型归档。点击任意一条即可复制。
+  </p>
+</Tool>
+
+<script>
+  import { $, copy, esc } from '../../lib/tool-client';
+
+  const input = $<HTMLTextAreaElement>('#ioc-in');
+  const out = $('[data-out]');
+  const total = $('[data-total]');
+  const defangBtn = $('[data-defang]');
+  const copyAllBtn = $<HTMLButtonElement>('[data-copy-all]');
+
+  type Kind = 'url' | 'domain' | 'ip' | 'email' | 'hash' | 'cve' | 'attack';
+  type Hit = { v: string; tag?: string };
+  const LABELS: Record<Kind, string> = {
+    url: 'URL',
+    domain: '域名',
+    ip: 'IPv4',
+    email: '邮箱',
+    hash: '哈希',
+    cve: 'CVE',
+    attack: 'ATT&CK',
+  };
+
+  // Things that look like domains but are file names
+  const FILE_EXT = new Set(
+    'exe dll sys scr bat cmd ps1 vbs js jse hta lnk msi jar apk elf so bin dat tmp log ini cfg conf json xml yml yaml txt csv doc docx xls xlsx ppt pptx pdf rtf zip rar 7z gz tar iso img png jpg jpeg gif svg html htm php asp aspx jsp py rb pl sh c h cpp go rs java class lua db sqlite key pem crt cer'.split(
+      ' ',
+    ),
+  );
+
+  const NOT_CJK = String.raw`[^\s"'<>()\[\]{}　-〿一-鿿＀-￯]`;
+  const RE = {
+    url: new RegExp(String.raw`\b(?:https?|ftp)://${NOT_CJK}+`, 'gi'),
+    ip: /(?<![\d.])(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}(?![\d.]*\d)/g,
+    email: /\b[a-z0-9._%+-]+@(?:[a-z0-9-]+\.)+[a-z]{2,24}\b/gi,
+    domain: /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,24}|xn--[a-z0-9-]{2,59})\b/gi,
+    hash: /\b[a-f0-9]{32,128}\b/gi,
+    cve: /\bCVE-\d{4}-\d{4,7}\b/gi,
+    attack: /\bT1\d{3}(?:\.\d{3})?\b/g,
+  };
+  const HASH_LEN: Record<number, string> = { 32: 'MD5', 40: 'SHA1', 64: 'SHA256', 128: 'SHA512' };
+
+  const refang = (s: string) =>
+    s
+      .replace(/\bhxxp(s?)/gi, 'http$1')
+      .replace(/\bh\[tt\]p/gi, 'http')
+      .replace(/\[:\/\/\]/g, '://')
+      .replace(/\[(?:\.|dot)\]|\((?:\.|dot)\)|\{(?:\.|dot)\}/gi, '.')
+      .replace(/\[:\]/g, ':')
+      .replace(/\[(?:@|at)\]|\((?:@|at)\)/gi, '@');
+
+  function ipTag(ip: string) {
+    const [a, b, c] = ip.split('.').map(Number);
+    if (a === 10 || (a === 172 && b >= 16 && b < 32) || (a === 192 && b === 168)) return '内网';
+    if (a === 127) return '环回';
+    if (a === 169 && b === 254) return '链路本地';
+    if (a === 100 && b >= 64 && b < 128) return 'CGNAT';
+    if ((a === 192 && b === 0 && c === 2) || (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113))
+      return '文档';
+    if (a === 0 || a >= 240) return '保留';
+    if (a >= 224) return '组播';
+  }
+
+  const defangHost = (h: string) => h.replace(/\./g, '[.]');
+  function defang(kind: Kind, v: string) {
+    if (kind === 'domain' || kind === 'ip') return defangHost(v);
+    if (kind === 'email') return v.replace(/@(.*)$/, (_, d) => '[@]' + defangHost(d));
+    if (kind === 'url')
+      return v
+        .replace(/^http/i, (m) => (m === 'http' ? 'hxxp' : 'HXXP'))
+        .replace(/^(\w+:\/\/)([^/?#]+)/, (_, s, h) => s + defangHost(h));
+    return v;
+  }
+
+  function extract(raw: string) {
+    const text = refang(raw);
+    const res: Record<Kind, Map<string, Hit>> = {
+      url: new Map(),
+      domain: new Map(),
+      ip: new Map(),
+      email: new Map(),
+      hash: new Map(),
+      cve: new Map(),
+      attack: new Map(),
+    };
+    const add = (k: Kind, v: string, tag?: string, key = v.toLowerCase()) => {
+      if (!res[k].has(key)) res[k].set(key, { v, tag });
+    };
+
+    for (const m of text.matchAll(RE.url)) add('url', m[0].replace(/[.,;:!?'")\]}>]+$/, ''), undefined, m[0]);
+    for (const m of text.matchAll(RE.ip)) add('ip', m[0], ipTag(m[0]));
+    for (const m of text.matchAll(RE.email)) add('email', m[0].toLowerCase());
+    for (const m of text.matchAll(RE.domain)) {
+      const d = m[0].toLowerCase();
+      const tld = d.slice(d.lastIndexOf('.') + 1);
+      if (FILE_EXT.has(tld)) continue;
+      add('domain', d, d.includes('xn--') ? 'IDN' : undefined);
+    }
+    for (const m of text.matchAll(RE.hash)) {
+      const t = HASH_LEN[m[0].length];
+      if (t) add('hash', m[0].toLowerCase(), t);
+    }
+    for (const m of text.matchAll(RE.cve)) add('cve', m[0].toUpperCase());
+    for (const m of text.matchAll(RE.attack)) add('attack', m[0]);
+    return res;
+  }
+
+  let last: [Kind, Hit[]][] = [];
+  const isDefang = () => defangBtn.getAttribute('aria-pressed') === 'true';
+  const show = (k: Kind, v: string) => (isDefang() ? defang(k, v) : v);
+
+  function render() {
+    const res = extract(input.value);
+    last = (Object.keys(res) as Kind[]).map((k) => [k, [...res[k].values()]] as [Kind, Hit[]]).filter(([, l]) => l.length);
+    const n = last.reduce((s, [, l]) => s + l.length, 0);
+    total.textContent = String(n);
+    copyAllBtn.disabled = !n;
+    if (!n) {
+      out.innerHTML = `<p class="empty">${input.value.trim() ? '没有找到指标' : '等待输入'}</p>`;
+      return;
+    }
+    out.innerHTML = last
+      .map(
+        ([k, list]) => `
+        <div class="grp">
+          <div class="grp-head">
+            <span>${LABELS[k]} <span class="c">${list.length}</span></span>
+            <button class="tbtn" type="button" data-copy-group="${k}">复制</button>
+          </div>
+          <ul>${list
+            .map(
+              (h) =>
+                `<li><button type="button" data-copy-one>${esc(show(k, h.v))}</button>${
+                  h.tag ? `<span class="sev ${h.tag === 'IDN' ? 'sev-mid' : 'sev-info'}">${h.tag}</span>` : ''
+                }</li>`,
+            )
+            .join('')}</ul>
+        </div>`,
+      )
+      .join('');
+  }
+
+  let t = 0;
+  input.addEventListener('input', () => {
+    clearTimeout(t);
+    t = window.setTimeout(render, 120);
+  });
+
+  defangBtn.addEventListener('click', () => {
+    defangBtn.setAttribute('aria-pressed', String(!isDefang()));
+    render();
+  });
+
+  out.addEventListener('click', (e) => {
+    const el = e.target as HTMLElement;
+    const one = el.closest<HTMLElement>('[data-copy-one]');
+    if (one) {
+      copy(one.textContent!);
+      one.parentElement!.setAttribute('data-done', '');
+      setTimeout(() => one.parentElement?.removeAttribute('data-done'), 900);
+      return;
+    }
+    const g = el.closest<HTMLElement>('[data-copy-group]');
+    if (g) {
+      const k = g.dataset.copyGroup as Kind;
+      const list = last.find(([kk]) => kk === k)?.[1] ?? [];
+      copy(list.map((h) => show(k, h.v)).join('\n'), g);
+    }
+  });
+
+  copyAllBtn.addEventListener('click', () =>
+    copy(last.map(([k, l]) => `# ${LABELS[k]}\n` + l.map((h) => show(k, h.v)).join('\n')).join('\n\n'), copyAllBtn),
+  );
+
+  $('[data-clear]').addEventListener('click', () => {
+    input.value = '';
+    render();
+    input.focus();
+  });
+
+  $('[data-sample]').addEventListener('click', () => {
+    input.value = `【样本分析】Loader 首次回连 hxxp://update-check[.]example-cdn[.]com/api/v2/beacon?id=7f3a ，
+备用 C2：198.51.100[.]23:8443、203.0.113.77，落地文件 payload.dll（MD5: 44d88612fea8a8f36de82e1278abb02f）。
+二阶段从 https://files.example.org/s/x9Kq2 拉取，SHA256：
+275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f
+漏洞利用 CVE-2021-44228、CVE-2023-4966；持久化 T1053.005，凭据窃取 T1003.001。
+钓鱼发件人 billing[@]example-pay[.]net，仿冒域名 xn--pple-43d.com，内网跳板 10.20.30.40。`;
+    render();
+  });
+</script>
+
+<style>
+  #ioc-in {
+    min-height: 360px;
+  }
+  [data-out] {
+    max-height: 560px;
+    overflow: auto;
+  }
+  [data-out] :global(.grp + .grp) {
+    border-top: 1px solid var(--line);
+  }
+  [data-out] :global(.grp-head) {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 8px 6px 16px;
+    background: var(--bg-elev);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg-2);
+  }
+  [data-out] :global(.grp-head .c) {
+    margin-left: 4px;
+    color: var(--accent-text);
+  }
+  [data-out] :global(ul) {
+    margin: 0;
+    padding: 0 0 10px;
+    list-style: none;
+  }
+  [data-out] :global(li) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    transition: background-color 0.15s;
+  }
+  [data-out] :global(li:hover) {
+    background: var(--bg-hover);
+  }
+  [data-out] :global(li[data-done]) {
+    background: var(--accent-soft);
+  }
+  [data-out] :global(li button) {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: left;
+    word-break: break-all;
+    cursor: copy;
+  }
+</style>

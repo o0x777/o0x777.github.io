@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import { TOOLS, toolUrl } from '../lib/tools';
 ---
 
 <dialog class="cmdk" id="cmdk" aria-label="搜索与命令">
@@ -35,7 +36,15 @@ import Icon from './Icon.astro';
   <span data-i="user"><Icon name="user" size={16} /></span>
   <span data-i="contrast"><Icon name="contrast" size={16} /></span>
   <span data-i="rss"><Icon name="rss" size={16} /></span>
+  <span data-i="terminal"><Icon name="terminal" size={16} /></span>
+  {TOOLS.map((t) => <span data-i={t.icon}><Icon name={t.icon} size={16} /></span>)}
 </template>
+<script
+  is:inline
+  type="application/json"
+  id="cmdk-tools"
+  set:html={JSON.stringify(TOOLS.map((t) => ({ title: t.name, hint: t.en, icon: t.icon, url: toolUrl(t.slug) })))}
+/>
 
 <script>
   type Doc = { t: string; u: string; d: string; g: string[]; n: string; date: string; x: string };
@@ -56,8 +65,12 @@ import Icon from './Icon.astro';
     { group: '页面', icon: 'home', title: '首页', run: go('/') },
     { group: '页面', icon: 'archive', title: '归档', run: go('/archives/') },
     { group: '页面', icon: 'hash', title: '标签', run: go('/tags/') },
+    { group: '页面', icon: 'terminal', title: '工具箱', run: go('/tools/') },
     { group: '页面', icon: 'user', title: '关于我', run: go('/about/') },
   ];
+  const tools: Item[] = (
+    JSON.parse(document.getElementById('cmdk-tools')!.textContent!) as { title: string; hint: string; icon: string; url: string }[]
+  ).map((t) => ({ group: '工具', icon: t.icon, title: t.title, hint: t.hint, run: go(t.url) }));
   const actions: Item[] = [
     {
       group: '操作',
@@ -111,6 +124,7 @@ import Icon from './Icon.astro';
           run: go(d.u),
         })),
         ...pages,
+        ...tools,
         ...actions,
       ];
     }
@@ -138,8 +152,8 @@ import Icon from './Icon.astro';
         snippet: d.t.toLowerCase().includes(terms[0]) ? d.d : snippetOf(d.x, terms[0]) || d.d,
         run: go(d.u),
       }));
-    const match = (i: Item) => terms.every((t) => i.title.toLowerCase().includes(t));
-    return [...hits, ...pages.filter(match), ...actions.filter(match)];
+    const match = (i: Item) => terms.every((t) => `${i.title} ${i.hint ?? ''}`.toLowerCase().includes(t));
+    return [...hits, ...pages.filter(match), ...tools.filter(match), ...actions.filter(match)];
   }
 
   function render() {

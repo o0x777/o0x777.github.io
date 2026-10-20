@@ -1,0 +1,369 @@
+---
+import Tool from '../../layouts/Tool.astro';
+---
+
+<Tool slug="headers">
+  <div class="cols-2">
+    <section class="pane">
+      <div class="pane-bar">
+        <span>Response headers</span>
+        <div class="pane-acts">
+          <button class="tbtn" type="button" data-sample>示例</button>
+          <button class="tbtn" type="button" data-clear>清空</button>
+        </div>
+      </div>
+      <textarea
+        class="tarea"
+        id="hdr-in"
+        spellcheck="false"
+        placeholder={'HTTP/2 200\ncontent-type: text/html\nstrict-transport-security: max-age=63072000\n…'}
+        aria-label="HTTP 响应头"></textarea>
+    </section>
+
+    <section class="pane score">
+      <div class="pane-bar">
+        <span>Grade</span>
+        <div class="pane-acts">
+          <button class="tbtn primary" type="button" data-baseline>复制推荐基线</button>
+        </div>
+      </div>
+      <div class="grade-row">
+        <p class="grade mono" data-grade>–</p>
+        <div>
+          <p class="pts mono"><span data-score>–</span><span class="of">/100</span></p>
+          <p class="counts mono" data-counts>等待输入</p>
+        </div>
+      </div>
+      <ul class="checks mono" data-checks></ul>
+    </section>
+  </div>
+
+  <section class="pane result">
+    <div class="pane-bar"><span>Findings <span class="n" data-nfind></span></span></div>
+    <ul class="findings" data-findings><li class="none"><p>等待输入</p></li></ul>
+  </section>
+
+  <p class="hint">
+    获取响应头：<code>curl -sI https://your.site</code>，整段粘进来即可。只做静态分析，不会访问任何站点。
+  </p>
+</Tool>
+
+<script>
+  import { $, copy, esc } from '../../lib/tool-client';
+
+  const input = $<HTMLTextAreaElement>('#hdr-in');
+  const gradeEl = $('[data-grade]');
+  const scoreEl = $('[data-score]');
+  const countsEl = $('[data-counts]');
+  const checksEl = $('[data-checks]');
+  const findingsEl = $('[data-findings]');
+  const nfind = $('[data-nfind]');
+
+  type Sev = 'high' | 'mid' | 'low' | 'info';
+  type Finding = { sev: Sev; title: string; desc: string; fix?: string };
+  const SEV_LABEL: Record<Sev, string> = { high: '高危', mid: '中危', low: '提示', info: '信息' };
+  const PENALTY: Record<Sev, number> = { high: 25, mid: 10, low: 4, info: 0 };
+  const ORDER: Sev[] = ['high', 'mid', 'low', 'info'];
+
+  const BASELINE = `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Cross-Origin-Opener-Policy: same-origin`;
+
+  function parse(raw: string) {
+    const h = new Map<string, string>();
+    const cookies: string[] = [];
+    for (const line of raw.split(/\r?\n/)) {
+      const i = line.indexOf(':');
+      if (i <= 0 || /^HTTP\//i.test(line)) continue;
+      const k = line.slice(0, i).trim().toLowerCase();
+      const v = line.slice(i + 1).trim();
+      if (!/^[a-z0-9-]+$/.test(k)) continue;
+      if (k === 'set-cookie') cookies.push(v);
+      else h.set(k, h.has(k) ? `${h.get(k)}, ${v}` : v);
+    }
+    return { h, cookies };
+  }
+
+  /** CSP → { directive: [sources] } */
+  const parseCsp = (csp: string) =>
+    new Map(
+      csp
+        .split(';')
+        .map((d) => d.trim().split(/\s+/))
+        .filter((d) => d[0])
+        .map(([name, ...src]) => [name.toLowerCase(), src.map((s) => s.toLowerCase())] as [string, string[]]),
+    );
+
+  function audit(h: Map<string, string>, cookies: string[]) {
+    const f: Finding[] = [];
+    const add = (sev: Sev, title: string, desc: string, fix?: string) => f.push({ sev, title, desc, fix });
+
+    // HSTS
+    const hsts = h.get('strict-transport-security');
+    if (!hsts) add('high', '缺少 HSTS', '首个请求可被降级为 HTTP 并劫持。', 'Strict-Transport-Security: max-age=63072000; includeSubDomains');
+    else {
+      const age = Number(/max-age\s*=\s*"?(\d+)/i.exec(hsts)?.[1] ?? 0);
+      if (age < 15552000) add('mid', `HSTS max-age 过短（${Math.round(age / 86400)} 天）`, '建议至少 180 天，常用 2 年。', 'max-age=63072000');
+      if (!/includesubdomains/i.test(hsts)) add('low', 'HSTS 未覆盖子域名', '子域名仍可走明文，用于 Cookie 注入。', 'includeSubDomains');
+    }
+
+    // CSP
+    const csp = h.get('content-security-policy');
+    const cspRo = h.get('content-security-policy-report-only');
+    let frameAncestors = false;
+    if (!csp) {
+      if (cspRo) add('mid', 'CSP 仅为 Report-Only', '只上报不拦截，XSS 照样执行。观察期结束后切换为强制模式。');
+      else add('high', '缺少 CSP', 'XSS 一旦出现，没有第二道防线。', "Content-Security-Policy: default-src 'self'; object-src 'none'; base-uri 'self'");
+    } else {
+      const d = parseCsp(csp);
+      const script = d.get('script-src') ?? d.get('default-src');
+      frameAncestors = d.has('frame-ancestors');
+      if (!script) add('mid', 'CSP 未限制脚本来源', '既没有 script-src 也没有 default-src，脚本不受约束。', "script-src 'self'");
+      else {
+        const nonce = script.some((s) => s.startsWith("'nonce-") || s.startsWith("'sha"));
+        if (script.includes("'unsafe-inline'") && !nonce && !script.includes("'strict-dynamic'"))
+          add('mid', "script-src 含 'unsafe-inline'", '内联脚本放行，CSP 对 XSS 基本失效。改用 nonce 或 hash。');
+        if (script.includes("'unsafe-eval'")) add('mid', "script-src 含 'unsafe-eval'", 'eval / new Function 可执行任意字符串。');
+        if (script.some((s) => s === '*' || s === 'http:' || s === 'https:' || s === 'data:'))
+          add('mid', 'script-src 过宽', '通配符或整个协议被放行，任何站点的脚本都能加载。');
+      }
+      if (!d.has('object-src') && !(d.get('default-src') ?? []).includes("'none'"))
+        add('low', 'CSP 未设置 object-src', '插件内容仍可加载。', "object-src 'none'");
+      if (!d.has('base-uri')) add('low', 'CSP 未设置 base-uri', '注入 <base> 可劫持相对路径脚本。', "base-uri 'self'");
+    }
+
+    // Clickjacking
+    const xfo = h.get('x-frame-options');
+    if (!xfo && !frameAncestors)
+      add('mid', '可被嵌入 iframe', '点击劫持风险。', "Content-Security-Policy: frame-ancestors 'none'");
+
+    // MIME sniffing
+    if ((h.get('x-content-type-options') ?? '').toLowerCase() !== 'nosniff')
+      add('mid', '缺少 X-Content-Type-Options', '浏览器可能把上传的文件当脚本执行。', 'X-Content-Type-Options: nosniff');
+
+    // Referrer
+    const rp = (h.get('referrer-policy') ?? '').toLowerCase();
+    if (!rp) add('low', '缺少 Referrer-Policy', 'URL 中的参数可能随 Referer 泄露给第三方。', 'Referrer-Policy: strict-origin-when-cross-origin');
+    else if (/unsafe-url|no-referrer-when-downgrade/.test(rp)) add('low', `Referrer-Policy 过宽（${rp}）`, '完整 URL 会发送给第三方。', 'strict-origin-when-cross-origin');
+
+    if (!h.has('permissions-policy')) add('low', '缺少 Permissions-Policy', '未声明的浏览器能力默认可被页面或嵌入内容调用。', 'Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    if (!h.has('cross-origin-opener-policy')) add('info', '未设置 COOP', '跨站窗口可持有 window 引用。', 'Cross-Origin-Opener-Policy: same-origin');
+
+    // Fingerprinting
+    const server = h.get('server');
+    if (server && /\d/.test(server)) add('low', `Server 暴露版本：${server}`, '方便攻击者匹配已知漏洞。');
+    for (const k of ['x-powered-by', 'x-aspnet-version', 'x-aspnetmvc-version', 'x-generator'])
+      if (h.has(k)) add('low', `${k} 暴露技术栈：${h.get(k)}`, '建议移除。');
+
+    // CORS
+    const acao = h.get('access-control-allow-origin');
+    if (acao === '*' && /true/i.test(h.get('access-control-allow-credentials') ?? ''))
+      add('high', 'CORS 通配且允许凭据', '配置矛盾，常见于反射 Origin 的错误实现，可被跨站读取用户数据。');
+    else if (acao === '*') add('info', 'CORS 对所有来源开放', '公开资源无妨；涉及用户数据的接口需收紧。');
+    else if (acao === 'null') add('mid', 'CORS 允许 null 来源', '沙箱 iframe 可伪造 null 来源读取响应。');
+
+    // Deprecated
+    const xxp = h.get('x-xss-protection');
+    if (xxp && !/^0/.test(xxp)) add('info', 'X-XSS-Protection 已废弃', '旧过滤器本身可被利用，建议设为 0 或移除，靠 CSP 防护。');
+
+    // Cookies
+    for (const c of cookies) {
+      const name = c.split('=')[0].trim();
+      const missing = [
+        !/;\s*secure/i.test(c) && 'Secure',
+        !/;\s*httponly/i.test(c) && 'HttpOnly',
+        !/;\s*samesite/i.test(c) && 'SameSite',
+      ].filter(Boolean);
+      if (missing.length)
+        add(missing.includes('Secure') ? 'mid' : 'low', `Cookie ${name} 缺少 ${missing.join(' / ')}`, '会话类 Cookie 三者都应设置。', `${name}=…; Secure; HttpOnly; SameSite=Lax`);
+    }
+    return f;
+  }
+
+  const CHECKS: [string, (h: Map<string, string>) => boolean][] = [
+    ['HSTS', (h) => h.has('strict-transport-security')],
+    ['CSP', (h) => h.has('content-security-policy')],
+    ['Frame', (h) => h.has('x-frame-options') || /frame-ancestors/i.test(h.get('content-security-policy') ?? '')],
+    ['nosniff', (h) => /nosniff/i.test(h.get('x-content-type-options') ?? '')],
+    ['Referrer', (h) => h.has('referrer-policy')],
+    ['Permissions', (h) => h.has('permissions-policy')],
+    ['COOP', (h) => h.has('cross-origin-opener-policy')],
+  ];
+
+  function render() {
+    const { h, cookies } = parse(input.value);
+    if (!h.size && !cookies.length) {
+      gradeEl.textContent = '–';
+      gradeEl.dataset.g = '';
+      scoreEl.textContent = '–';
+      countsEl.textContent = input.value.trim() ? '没有识别到响应头' : '等待输入';
+      checksEl.innerHTML = '';
+      nfind.textContent = '';
+      findingsEl.innerHTML = '<li class="none"><p>等待输入</p></li>';
+      return;
+    }
+    const list = audit(h, cookies).sort((a, b) => ORDER.indexOf(a.sev) - ORDER.indexOf(b.sev));
+    const score = Math.max(0, 100 - list.reduce((s, f) => s + PENALTY[f.sev], 0));
+    const g = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 40 ? 'D' : 'F';
+    gradeEl.textContent = g;
+    gradeEl.dataset.g = g;
+    scoreEl.textContent = String(score);
+    const n = (s: Sev) => list.filter((f) => f.sev === s).length;
+    countsEl.textContent = `${n('high')} 高 · ${n('mid')} 中 · ${n('low')} 低`;
+    nfind.textContent = String(list.length);
+    checksEl.innerHTML = CHECKS.map(([name, ok]) => `<li ${ok(h) ? 'data-ok' : ''}>${name}</li>`).join('');
+    findingsEl.innerHTML = list.length
+      ? list
+          .map(
+            (f) =>
+              `<li><span class="sev sev-${f.sev}">${SEV_LABEL[f.sev]}</span><div><b>${esc(f.title)}</b><p>${esc(f.desc)}</p>${
+                f.fix ? `<code class="fix">${esc(f.fix)}</code>` : ''
+              }</div></li>`,
+          )
+          .join('')
+      : '<li class="none"><p>全部通过。干净。</p></li>';
+  }
+
+  let t = 0;
+  input.addEventListener('input', () => {
+    clearTimeout(t);
+    t = window.setTimeout(render, 120);
+  });
+  $('[data-clear]').addEventListener('click', () => {
+    input.value = '';
+    render();
+    input.focus();
+  });
+  $('[data-baseline]').addEventListener('click', (e) => copy(BASELINE, e.currentTarget as HTMLElement));
+  $('[data-sample]').addEventListener('click', () => {
+    input.value = `HTTP/1.1 200 OK
+Server: nginx/1.18.0
+Content-Type: text/html; charset=utf-8
+X-Powered-By: PHP/7.4.3
+Strict-Transport-Security: max-age=86400
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https:
+X-XSS-Protection: 1; mode=block
+Access-Control-Allow-Origin: *
+Set-Cookie: SESSIONID=8f2c1a; Path=/; HttpOnly
+Set-Cookie: theme=dark; Path=/; Secure; SameSite=Lax`;
+    render();
+  });
+</script>
+
+<style>
+  .result {
+    margin-top: 16px;
+  }
+  .grade-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 20px 20px;
+  }
+  .grade {
+    display: grid;
+    place-items: center;
+    width: 104px;
+    height: 104px;
+    margin: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 20px;
+    color: var(--fg-3);
+    font-size: 60px;
+    font-weight: 600;
+    line-height: 1;
+    transition:
+      color 0.3s,
+      border-color 0.3s,
+      box-shadow 0.3s;
+  }
+  .grade[data-g='A'],
+  .grade[data-g='B'] {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    box-shadow: 0 0 40px -10px var(--glow);
+    text-shadow: 0 0 24px var(--glow);
+  }
+  .grade[data-g='C'],
+  .grade[data-g='D'] {
+    color: var(--warn);
+    border-color: var(--warn);
+  }
+  .grade[data-g='F'] {
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+  .pts {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .of {
+    margin-left: 2px;
+    color: var(--fg-3);
+    font-size: 14px;
+  }
+  .counts {
+    margin: 10px 0 0;
+    color: var(--fg-2);
+    font-size: 12.5px;
+  }
+  .checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0 20px 20px;
+    list-style: none;
+  }
+  .checks :global(li) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--fg-3);
+    font-size: 11.5px;
+    text-decoration: line-through;
+    text-decoration-color: var(--danger);
+  }
+  .checks :global(li[data-ok]) {
+    color: var(--accent-text);
+    border-color: var(--accent-line);
+    text-decoration: none;
+  }
+  .checks :global(li[data-ok])::before {
+    content: '✓';
+  }
+  .findings :global(.fix) {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--bg-inset);
+    color: var(--accent-text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    word-break: break-all;
+  }
+  .findings :global(.none) {
+    display: block;
+    color: var(--fg-3);
+    text-align: center;
+  }
+  @media (max-width: 520px) {
+    .grade {
+      width: 84px;
+      height: 84px;
+      font-size: 48px;
+    }
+  }
+</style>

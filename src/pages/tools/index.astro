@@ -1,0 +1,185 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { TOOLS, toolId, toolUrl } from '../../lib/tools';
+---
+
+<Base title="工具" description="小而锋利的安全工具。全部在浏览器本地运行，数据不出本机。">
+  <div class="container">
+    <header class="page-head">
+      <p class="eyebrow"><span class="accent">/</span> Tools</p>
+      <h1>工具</h1>
+      <p class="sub">几把趁手的小刀。本地运行，零上传。</p>
+    </header>
+
+    <ul class="tools">
+      {
+        TOOLS.map((t, i) => (
+          <li data-reveal style={`--d:${i}`}>
+            <a class="tool-card" href={toolUrl(t.slug)} data-spot>
+              <div class="top">
+                <span class="ico">
+                  <Icon name={t.icon} size={20} />
+                </span>
+                <span class="mono idx">{toolId(i)}</span>
+              </div>
+              <h2>
+                {t.name}
+                <span class="mono en">{t.en}</span>
+              </h2>
+              <p>{t.desc}</p>
+              <span class="go mono" aria-hidden="true">
+                打开 <span>→</span>
+              </span>
+            </a>
+          </li>
+        ))
+      }
+      <li class="soon" data-reveal style={`--d:${TOOLS.length}`}>
+        <span class="mono idx">{toolId(TOOLS.length)}</span>
+        <p>下一把刀，<br />正在磨。</p>
+        <span class="mono cursor" aria-hidden="true">_</span>
+      </li>
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0 0 120px;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .tools li {
+    display: flex;
+    background: var(--bg);
+  }
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 240px;
+    padding: 28px 26px 26px;
+    color: inherit;
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+  .tool-card:hover {
+    background: color-mix(in oklab, var(--bg) 60%, var(--bg-elev));
+  }
+  .top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+  .ico {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-strong);
+    border-radius: 11px;
+    color: var(--fg-2);
+    transition:
+      color 0.3s,
+      border-color 0.3s,
+      box-shadow 0.3s;
+  }
+  .tool-card:hover .ico {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    box-shadow: 0 0 24px -6px var(--glow);
+  }
+  .idx {
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+  h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .en {
+    color: var(--fg-3);
+    font-size: 11.5px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  p {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+  .go {
+    margin-top: auto;
+    padding-top: 28px;
+    color: var(--fg-3);
+    font-size: 12px;
+    transition: color 0.2s;
+  }
+  .go span {
+    display: inline-block;
+    transition: transform 0.25s var(--ease);
+  }
+  .tool-card:hover .go {
+    color: var(--accent-text);
+  }
+  .tool-card:hover .go span {
+    transform: translateX(3px);
+  }
+
+  .soon {
+    flex-direction: column;
+    padding: 28px 26px 26px;
+  }
+  .soon .idx {
+    align-self: flex-end;
+    margin-top: 14px;
+  }
+  .soon p {
+    margin-top: auto;
+    color: var(--fg-3);
+  }
+  .cursor {
+    margin-top: 28px;
+    color: var(--accent-text);
+    font-size: 12px;
+    animation: blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .tools {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 600px) {
+    .tools {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tool-card {
+      min-height: 0;
+    }
+    .top {
+      margin-bottom: 24px;
+    }
+  }
+</style>

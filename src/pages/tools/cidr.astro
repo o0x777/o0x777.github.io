@@ -1,0 +1,353 @@
+---
+import Tool from '../../layouts/Tool.astro';
+---
+
+<Tool slug="cidr">
+  <div class="stack">
+    <section class="pane">
+      <div class="pane-bar">
+        <span>CIDR</span>
+        <span class="type" data-type></span>
+      </div>
+      <input
+        class="tinput big"
+        id="cidr-in"
+        value="192.168.10.37/24"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="IPv4 / CIDR"
+      />
+      <div class="slider">
+        <span class="mono">/0</span>
+        <input class="range" id="cidr-len" type="range" min="0" max="32" value="24" aria-label="前缀长度" />
+        <span class="mono">/32</span>
+      </div>
+    </section>
+
+    <section class="pane">
+      <div class="pane-bar">
+        <span>Bits</span>
+        <span class="legend mono"><i class="net"></i>网络 <span data-nbits>24</span> <i class="host"></i>主机 <span data-hbits>8</span></span>
+      </div>
+      <div class="bits mono" data-bits></div>
+    </section>
+
+    <div class="cols-2">
+      <section class="pane">
+        <div class="pane-bar"><span>Subnet</span></div>
+        <table class="kv"><tbody data-kv></tbody></table>
+      </section>
+      <section class="pane">
+        <div class="pane-bar">
+          <span>归属判断</span>
+          <span class="n mono" data-in-count></span>
+        </div>
+        <textarea
+          class="tarea short"
+          id="cidr-test"
+          spellcheck="false"
+          placeholder="每行一个 IP，判断是否落在该网段内"
+          aria-label="待判断的 IP">192.168.10.200
+192.168.11.5
+10.0.0.1</textarea>
+        <ul class="belong mono" data-belong></ul>
+      </section>
+    </div>
+  </div>
+  <p class="hint">
+    支持 <code>10.0.0.0/8</code>、<code>10.1.2.3 255.255.0.0</code> 或单个 IP。拖动滑块即时改变前缀。仅限 IPv4。
+  </p>
+</Tool>
+
+<script>
+  import { $, esc } from '../../lib/tool-client';
+
+  const input = $<HTMLInputElement>('#cidr-in');
+  const range = $<HTMLInputElement>('#cidr-len');
+  const test = $<HTMLTextAreaElement>('#cidr-test');
+  const bitsEl = $('[data-bits]');
+  const kvEl = $('[data-kv]');
+  const typeEl = $('[data-type]');
+  const belongEl = $('[data-belong]');
+  const inCount = $('[data-in-count]');
+
+  const toInt = (ip: string) => {
+    const p = ip.trim().split('.');
+    if (p.length !== 4 || p.some((x) => !/^\d{1,3}$/.test(x) || +x > 255)) return null;
+    return p.reduce((a, x) => a * 256 + +x, 0);
+  };
+  const toIp = (n: number) => [24, 16, 8, 0].map((s) => (n >>> s) & 255).join('.');
+  const maskOf = (len: number) => (len === 0 ? 0 : (0xffffffff << (32 - len)) >>> 0);
+  const maskLen = (m: number) => {
+    const bin = m.toString(2).padStart(32, '0');
+    return /^1*0*$/.test(bin) ? bin.indexOf('0') === -1 ? 32 : bin.indexOf('0') : null;
+  };
+
+  function kind(n: number) {
+    const a = n >>> 24, b = (n >>> 16) & 255, c = (n >>> 8) & 255;
+    if (a === 10 || (a === 172 && b >= 16 && b < 32) || (a === 192 && b === 168)) return ['私有地址', 'RFC 1918'];
+    if (a === 127) return ['环回', 'RFC 1122'];
+    if (a === 169 && b === 254) return ['链路本地', 'RFC 3927'];
+    if (a === 100 && b >= 64 && b < 128) return ['运营商级 NAT', 'RFC 6598'];
+    if ((a === 192 && b === 0 && c === 2) || (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113))
+      return ['文档示例', 'RFC 5737'];
+    if (a === 198 && (b === 18 || b === 19)) return ['基准测试', 'RFC 2544'];
+    if (a >= 224 && a < 240) return ['组播', 'RFC 5771'];
+    if (a === 0 || a >= 240) return ['保留', 'RFC 1112'];
+    return ['公网', ''];
+  }
+
+  let state: { ip: number; len: number } | null = null;
+
+  function parseInput() {
+    const v = input.value.trim();
+    let m = /^([\d.]+)\s*\/\s*(\d{1,2})$/.exec(v);
+    if (m) {
+      const ip = toInt(m[1]);
+      const len = +m[2];
+      return ip !== null && len <= 32 ? { ip, len } : null;
+    }
+    m = /^([\d.]+)\s+([\d.]+)$/.exec(v);
+    if (m) {
+      const ip = toInt(m[1]);
+      const mk = toInt(m[2]);
+      const len = mk === null ? null : maskLen(mk);
+      return ip !== null && len !== null ? { ip, len } : null;
+    }
+    const ip = toInt(v);
+    return ip !== null ? { ip, len: +range.value } : null;
+  }
+
+  function render() {
+    input.toggleAttribute('aria-invalid', !state);
+    if (!state) {
+      typeEl.textContent = '无法解析';
+      return;
+    }
+    const { ip, len } = state;
+    const mask = maskOf(len);
+    const net = (ip & mask) >>> 0;
+    const bc = (net | (~mask >>> 0)) >>> 0;
+    const total = 2 ** (32 - len);
+    const usable = len >= 31 ? total : total - 2;
+    const first = len >= 31 ? net : net + 1;
+    const last = len >= 31 ? bc : bc - 1;
+    const [k, rfc] = kind(net);
+
+    range.value = String(len);
+    range.style.setProperty('--p', `${(len / 32) * 100}%`);
+    typeEl.textContent = rfc ? `${k} · ${rfc}` : k;
+    typeEl.dataset.pub = String(!rfc);
+    $('[data-nbits]').textContent = String(len);
+    $('[data-hbits]').textContent = String(32 - len);
+
+    const bin = ip.toString(2).padStart(32, '0');
+    bitsEl.innerHTML = [0, 1, 2, 3]
+      .map(
+        (o) =>
+          `<div class="octet"><span class="dec">${(ip >>> (24 - o * 8)) & 255}</span><div class="row">${[...bin.slice(o * 8, o * 8 + 8)]
+            .map((b, i) => `<span class="${o * 8 + i < len ? 'n' : 'h'}${b === '1' ? ' one' : ''}">${b}</span>`)
+            .join('')}</div></div>`,
+      )
+      .join('<span class="dot">.</span>');
+
+    const rows: [string, string, string?][] = [
+      ['网络地址', `${toIp(net)}/${len}`],
+      ['子网掩码', toIp(mask)],
+      ['通配符', toIp(~mask >>> 0), 'ACL / OSPF 写法'],
+      ['广播地址', len >= 31 ? '—' : toIp(bc)],
+      ['可用范围', `${toIp(first)} – ${toIp(last)}`],
+      ['可用主机', usable.toLocaleString(), len === 31 ? '点对点链路 RFC 3021' : len === 32 ? '单主机' : `共 ${total.toLocaleString()} 个地址`],
+      ['十六进制', '0x' + ip.toString(16).toUpperCase().padStart(8, '0')],
+      ['整数', String(ip)],
+    ];
+    kvEl.innerHTML = rows
+      .map(([a, b, c]) => `<tr><th>${a}</th><td>${esc(b)}${c ? `<small>${c}</small>` : ''}</td></tr>`)
+      .join('');
+
+    const lines = test.value.split('\n').map((l) => l.trim()).filter(Boolean);
+    let hit = 0;
+    belongEl.innerHTML = lines
+      .map((l) => {
+        const n = toInt(l);
+        if (n === null) return `<li data-bad><span>${esc(l)}</span><b>无效</b></li>`;
+        const ok = ((n & mask) >>> 0) === net;
+        if (ok) hit++;
+        return `<li ${ok ? 'data-ok' : ''}><span>${esc(l)}</span><b>${ok ? '∈ 在内' : '∉ 不在'}</b></li>`;
+      })
+      .join('');
+    inCount.textContent = lines.length ? `${hit} / ${lines.length}` : '';
+  }
+
+  input.addEventListener('input', () => {
+    state = parseInput();
+    render();
+  });
+  range.addEventListener('input', () => {
+    if (!state) return;
+    state = { ...state, len: +range.value };
+    input.value = `${toIp(state.ip)}/${state.len}`;
+    render();
+  });
+  test.addEventListener('input', render);
+
+  state = parseInput();
+  render();
+</script>
+
+<style>
+  .big {
+    height: 72px;
+    font-size: clamp(22px, 4vw, 30px);
+    letter-spacing: -0.02em;
+  }
+  .big[aria-invalid] {
+    color: var(--danger);
+  }
+  .type {
+    color: var(--warn);
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+  .type[data-pub='true'] {
+    color: var(--accent-text);
+  }
+  .slider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 4px 16px 20px;
+    color: var(--fg-3);
+    font-size: 11px;
+  }
+
+  .legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .legend i {
+    width: 8px;
+    height: 8px;
+    margin-left: 8px;
+    border-radius: 2px;
+  }
+  .legend .net {
+    background: var(--accent);
+  }
+  .legend .host {
+    border: 1px solid var(--fg-3);
+  }
+
+  .bits {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    padding: 28px 16px;
+    overflow-x: auto;
+  }
+  .bits :global(.octet) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .bits :global(.dec) {
+    color: var(--fg-2);
+    font-size: 13px;
+  }
+  .bits :global(.row) {
+    display: flex;
+    gap: 3px;
+  }
+  .bits :global(.row span) {
+    display: grid;
+    place-items: center;
+    width: clamp(18px, 2.6vw, 30px);
+    height: clamp(26px, 3.6vw, 40px);
+    border: 1px solid var(--line-strong);
+    border-radius: 5px;
+    color: var(--fg-3);
+    font-size: clamp(11px, 1.4vw, 15px);
+    transition:
+      background-color 0.25s,
+      color 0.25s,
+      border-color 0.25s,
+      box-shadow 0.25s;
+  }
+  .bits :global(.row span.n) {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .bits :global(.row span.n.one) {
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 0 12px -2px var(--glow);
+  }
+  .bits :global(.row span.h.one) {
+    color: var(--fg);
+  }
+  .bits :global(.dot) {
+    padding-bottom: 6px;
+    color: var(--fg-3);
+  }
+
+  .short {
+    min-height: 110px;
+    border-bottom: 1px solid var(--line);
+  }
+  .belong {
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    font-size: 13px;
+  }
+  .belong :global(li) {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 16px;
+    color: var(--fg-3);
+  }
+  .belong :global(li b) {
+    font-weight: 500;
+  }
+  .belong :global(li[data-ok]) {
+    color: var(--fg);
+  }
+  .belong :global(li[data-ok] b) {
+    color: var(--accent-text);
+  }
+  .belong :global(li[data-bad] b) {
+    color: var(--danger);
+  }
+
+  @media (max-width: 600px) {
+    .bits {
+      flex-wrap: wrap;
+      row-gap: 18px;
+    }
+    .bits :global(.dot) {
+      display: none;
+    }
+    .bits {
+      padding: 22px 8px;
+    }
+    .bits :global(.octet) {
+      width: calc(50% - 6px);
+    }
+    .bits :global(.row) {
+      gap: 2px;
+    }
+    .bits :global(.row span) {
+      width: 15px;
+      height: 26px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+  }
+</style>

@@ -1,0 +1,467 @@
+---
+import Base from './Base.astro';
+import Icon from '../components/Icon.astro';
+import { TOOLS, toolId, toolUrl, type ToolSlug } from '../lib/tools';
+
+interface Props {
+  slug: ToolSlug;
+}
+
+const { slug } = Astro.props;
+const i = TOOLS.findIndex((t) => t.slug === slug);
+const tool = TOOLS[i];
+const others = TOOLS.map((t, j) => ({ ...t, id: toolId(j) })).filter((t) => t.slug !== slug);
+---
+
+<Base title={tool.name} description={`${tool.name}（${tool.en}）：${tool.desc}本地运行，数据不出浏览器。`}>
+  <div class="container tool">
+    <header class="page-head tool-head">
+      <p class="eyebrow">
+        <a href="/tools/"><span class="accent">/</span> Tools</a> · {toolId(i)} · {tool.en}
+      </p>
+      <h1>{tool.name}</h1>
+      <p class="sub">{tool.desc}</p>
+      <p class="local mono"><span class="dot" aria-hidden="true"></span>本地运行 · 零上传</p>
+    </header>
+
+    <slot />
+
+    <nav class="more" aria-label="其他工具">
+      <p class="eyebrow">More tools</p>
+      <ul>
+        {
+          others.map((t) => (
+            <li>
+              <a href={toolUrl(t.slug)}>
+                <Icon name={t.icon} size={16} />
+                {t.name}
+                <span class="mono">{t.id}</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</Base>
+
+<style>
+  .tool-head .eyebrow a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .tool-head .eyebrow a:hover {
+    color: var(--fg);
+  }
+  .local {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 0;
+    color: var(--fg-3);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--glow);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+
+  .more {
+    margin-top: 96px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+  }
+  .more ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .more a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--fg-2);
+    font-size: 14px;
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+  .more a:hover {
+    color: var(--fg);
+    border-color: var(--accent-line);
+  }
+  .more a .mono {
+    color: var(--fg-3);
+    font-size: 11px;
+  }
+</style>
+
+<style is:global>
+  /* ---------- Tool UI kit (only loaded on /tools/* pages) ---------- */
+  .tool {
+    --danger: light-dark(#c4302b, #ff6b5e);
+    --warn: light-dark(#9a5b00, #ffc24a);
+    --danger-soft: light-dark(rgb(196 48 43 / 0.1), rgb(255 107 94 / 0.12));
+    --warn-soft: light-dark(rgb(154 91 0 / 0.1), rgb(255 194 74 / 0.12));
+    padding-bottom: 96px;
+  }
+  .tool-head {
+    padding-bottom: 36px;
+  }
+
+  .stack {
+    display: grid;
+    gap: 16px;
+  }
+  .cols-2 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .cols-2 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* Pane: a framed surface with a mono title bar */
+  .pane {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: color-mix(in oklab, var(--bg-elev) 70%, transparent);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .pane:focus-within {
+    border-color: var(--line-strong);
+  }
+  .pane-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 8px 8px 16px;
+    border-bottom: 1px solid var(--line);
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .pane-bar .n {
+    color: var(--accent-text);
+  }
+  .pane-acts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .pane-body {
+    padding: 16px;
+  }
+
+  /* Small mono button */
+  .tbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .tbtn:hover {
+    color: var(--fg);
+    border-color: var(--line-strong);
+    background: var(--bg-hover);
+  }
+  .tbtn[data-done],
+  .tbtn.primary {
+    color: var(--accent-text);
+    border-color: var(--accent-line);
+  }
+  .tbtn.primary:hover {
+    background: var(--accent-soft);
+  }
+  .tbtn[aria-pressed='true'] {
+    color: var(--accent-text);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+  .tbtn:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* Text inputs */
+  .tarea,
+  .tinput {
+    display: block;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.75;
+    outline: none;
+  }
+  .tarea {
+    min-height: 220px;
+    padding: 16px;
+    resize: vertical;
+    tab-size: 2;
+  }
+  .tinput {
+    height: 52px;
+    padding: 0 16px;
+  }
+  .tarea::placeholder,
+  .tinput::placeholder {
+    color: var(--fg-3);
+    opacity: 0.8;
+  }
+
+  /* Key/value table */
+  .kv {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .kv th,
+  .kv td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+  }
+  .kv tr:last-child :is(th, td) {
+    border-bottom: 0;
+  }
+  .kv th {
+    width: 34%;
+    color: var(--fg-3);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  .kv td {
+    font-family: var(--font-mono);
+    word-break: break-all;
+  }
+  .kv td small {
+    display: block;
+    color: var(--fg-3);
+    font-family: var(--font-sans);
+    font-size: 12px;
+  }
+
+  /* Severity pills */
+  .sev {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .sev-high {
+    color: var(--danger);
+    background: var(--danger-soft);
+  }
+  .sev-mid {
+    color: var(--warn);
+    background: var(--warn-soft);
+  }
+  .sev-low {
+    color: var(--accent-text);
+    background: var(--accent-soft);
+  }
+  .sev-info {
+    color: var(--fg-2);
+    background: var(--bg-hover);
+  }
+
+  /* Findings list */
+  .findings {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .findings li {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .findings li:last-child {
+    border-bottom: 0;
+  }
+  .findings .sev {
+    justify-self: start;
+    margin-top: 2px;
+  }
+  .findings b {
+    font-weight: 600;
+  }
+  .findings p {
+    margin: 2px 0 0;
+    color: var(--fg-2);
+    font-size: 13px;
+  }
+
+  .empty {
+    margin: 0;
+    padding: 28px 16px;
+    color: var(--fg-3);
+    font-size: 13.5px;
+    text-align: center;
+  }
+
+  /* Checkbox-as-chip */
+  .opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--fg-2);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    cursor: pointer;
+    user-select: none;
+    transition:
+      color 0.2s,
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .opt input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .opt::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--fg-3);
+    border-radius: 2px;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .opt:has(input:checked) {
+    color: var(--fg);
+    border-color: var(--accent-line);
+  }
+  .opt:has(input:checked)::before {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--glow);
+  }
+  .opt:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Range slider */
+  .range {
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    background: transparent;
+    accent-color: var(--accent);
+    cursor: pointer;
+    appearance: none;
+  }
+  .range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(var(--accent), var(--accent)) 0 / var(--p, 50%) 100% no-repeat, var(--line-strong);
+  }
+  .range::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line-strong);
+  }
+  .range::-moz-range-progress {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--accent);
+  }
+  .range::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border: 3px solid var(--bg);
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-line), 0 0 12px var(--glow);
+    appearance: none;
+  }
+  .range::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 3px solid var(--bg);
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-line), 0 0 12px var(--glow);
+  }
+
+  .hint {
+    margin: 12px 0 0;
+    color: var(--fg-3);
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+  .hint code {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    color: var(--fg-2);
+  }
+</style>
