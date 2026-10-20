@@ -1,6 +1,13 @@
 /** The toolbox. Order here is the order on /tools/ and the 0x.. index. */
 export const TOOLS = [
   {
+    slug: 'chef',
+    name: '编解码',
+    en: 'Codec Chef',
+    icon: 'layers',
+    desc: '编码、哈希、加解密，串成一条流水线。✦ Magic 自动剥壳。',
+  },
+  {
     slug: 'ioc',
     name: 'IOC 提取',
     en: 'IOC Extractor',

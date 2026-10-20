@@ -35,11 +35,13 @@ import { TOOLS, toolId, toolUrl } from '../../lib/tools';
           </li>
         ))
       }
+      {TOOLS.length % 3 !== 0 && (
       <li class="soon" data-reveal style={`--d:${TOOLS.length}`}>
         <span class="mono idx">{toolId(TOOLS.length)}</span>
         <p>下一把刀，<br />正在磨。</p>
         <span class="mono cursor" aria-hidden="true">_</span>
       </li>
+      )}
     </ul>
   </div>
 </Base>

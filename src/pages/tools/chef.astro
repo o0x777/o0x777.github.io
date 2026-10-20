@@ -1,0 +1,641 @@
+---
+import Tool from '../../layouts/Tool.astro';
+---
+
+<Tool slug="chef">
+  <div class="chef">
+    <aside class="pane ops">
+      <div class="pane-bar">
+        <span>Operations</span>
+        <span class="n mono" data-op-count></span>
+      </div>
+      <input
+        class="tinput op-search"
+        id="op-search"
+        type="search"
+        placeholder="搜索操作…  ↵ 添加首个"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label="搜索操作"
+      />
+      <div class="op-list" data-op-list></div>
+    </aside>
+
+    <section class="pane recipe">
+      <div class="pane-bar">
+        <span>Recipe <span class="n" data-step-count></span></span>
+        <div class="pane-acts">
+          <button class="tbtn" type="button" data-share title="把当前配方写进链接（不含输入）">分享配方</button>
+          <button class="tbtn" type="button" data-reset>清空</button>
+        </div>
+      </div>
+      <ol class="steps" data-steps></ol>
+      <p class="empty" data-steps-empty>从左侧点选操作，<br />它们会自上而下依次执行。</p>
+    </section>
+
+    <div class="io">
+      <section class="pane">
+        <div class="pane-bar">
+          <span>Input <span class="meta" data-in-meta></span></span>
+          <div class="pane-acts">
+            <button class="tbtn primary" type="button" data-magic title="自动识别并逐层剥开编码">✦ Magic</button>
+            <button class="tbtn" type="button" data-clear>清空</button>
+          </div>
+        </div>
+        <textarea class="tarea" id="chef-in" spellcheck="false" placeholder="输入文本，或把文件拖进来" aria-label="输入"
+        ></textarea>
+      </section>
+      <section class="pane out-pane">
+        <div class="pane-bar">
+          <span>Output <span class="meta" data-out-meta></span></span>
+          <div class="pane-acts">
+            <button class="tbtn" type="button" data-hexview aria-pressed="false">Hex</button>
+            <button class="tbtn" type="button" data-swap title="把输出作为新的输入">↑ 回填</button>
+            <button class="tbtn" type="button" data-copy>复制</button>
+          </div>
+        </div>
+        <pre class="out mono" data-out></pre>
+      </section>
+    </div>
+  </div>
+  <p class="hint">
+    致敬 GCHQ 的 <a href="https://github.com/gchq/CyberChef" target="_blank" rel="noopener">CyberChef</a>：每一步都以字节为单位传递，文本、二进制、密文可以随意串联。配方存在链接里，复制即可分享；输入永远不会进入链接。
+  </p>
+</Tool>
+
+<script>
+  import { $, copy, esc } from '../../lib/tool-client';
+  import { OP, OPS, hex, magic, text, utf8, type Bytes, type Param } from '../../lib/chef-ops';
+
+  type Step = { id: string; args: any[]; off?: boolean };
+
+  const input = $<HTMLTextAreaElement>('#chef-in');
+  const search = $<HTMLInputElement>('#op-search');
+  const opList = $('[data-op-list]');
+  const stepsEl = $('[data-steps]');
+  const stepsEmpty = $('[data-steps-empty]');
+  const out = $('[data-out]');
+  const outMeta = $('[data-out-meta]');
+  const inMeta = $('[data-in-meta]');
+  const hexBtn = $('[data-hexview]');
+
+  const defaults = (id: string) => (OP[id].params ?? []).map((p) => structuredClone(p.value));
+  let recipe: Step[] = [];
+  let fileBytes: Bytes | null = null; // set when a file is dropped in
+  let result: Bytes = new Uint8Array();
+
+  /* ---------- Operation list ---------- */
+  $('[data-op-count]').textContent = String(OPS.length);
+  function renderOps() {
+    const q = search.value.trim().toLowerCase();
+    const hits = OPS.filter((o) => !q || `${o.name} ${o.group} ${o.desc ?? ''} ${o.id}`.toLowerCase().includes(q));
+    const groups = [...new Set(hits.map((o) => o.group))];
+    opList.innerHTML = hits.length
+      ? groups
+          .map(
+            (g) =>
+              `<p class="grp">${g}</p>` +
+              hits
+                .filter((o) => o.group === g)
+                .map((o) => `<button type="button" data-add="${o.id}"${o.desc ? ` title="${esc(o.desc)}"` : ''}>${esc(o.name)}</button>`)
+                .join(''),
+          )
+          .join('')
+      : '<p class="none">没有匹配的操作</p>';
+  }
+  renderOps();
+  search.addEventListener('input', renderOps);
+  search.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const first = opList.querySelector<HTMLElement>('[data-add]');
+    if (first) add(first.dataset.add!);
+  });
+  opList.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-add]');
+    if (b) add(b.dataset.add!);
+  });
+
+  function add(id: string) {
+    recipe.push({ id, args: defaults(id) });
+    renderSteps();
+    bake();
+    stepsEl.lastElementChild?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  /* ---------- Recipe ---------- */
+  function control(p: Param, i: number, j: number, v: any) {
+    const at = `data-i="${i}" data-p="${j}"`;
+    const field = (inner: string) => `<label class="prm"><span>${esc(p.name)}</span>${inner}</label>`;
+    switch (p.type) {
+      case 'bool':
+        return `<label class="opt"><input type="checkbox" ${at} ${v ? 'checked' : ''} />${esc(p.name)}</label>`;
+      case 'select':
+        return field(
+          `<select class="fld" ${at}>${p.options.map((o) => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`,
+        );
+      case 'number':
+        return field(`<input class="fld" type="number" ${at} value="${esc(String(v))}" />`);
+      case 'key':
+        return field(
+          `<span class="keyf"><input class="fld" ${at} data-k="v" value="${esc(v.v)}" spellcheck="false" autocomplete="off" /><select class="fld" ${at} data-k="f">${['UTF8', 'Hex', 'Base64']
+            .map((f) => `<option ${f === v.f ? 'selected' : ''}>${f}</option>`)
+            .join('')}</select></span>`,
+        );
+      default:
+        return field(`<input class="fld" ${at} value="${esc(String(v))}" spellcheck="false" autocomplete="off" />`);
+    }
+  }
+
+  function renderSteps() {
+    stepsEmpty.hidden = recipe.length > 0;
+    $('[data-step-count]').textContent = recipe.length ? String(recipe.length) : '';
+    stepsEl.innerHTML = recipe
+      .map((s, i) => {
+        const op = OP[s.id];
+        const params = (op.params ?? []).map((p, j) => control(p, i, j, s.args[j])).join('');
+        return `<li class="step" data-step="${i}" ${s.off ? 'data-off' : ''}>
+          <div class="step-head">
+            <span class="idx mono">${String(i + 1).padStart(2, '0')}</span>
+            <b>${esc(op.name)}</b>
+            <span class="step-acts">
+              <button type="button" data-act="up" aria-label="上移" ${i ? '' : 'disabled'}>↑</button>
+              <button type="button" data-act="down" aria-label="下移" ${i < recipe.length - 1 ? '' : 'disabled'}>↓</button>
+              <button type="button" data-act="off" aria-label="停用" aria-pressed="${!!s.off}">⏸</button>
+              <button type="button" data-act="del" aria-label="删除">✕</button>
+            </span>
+          </div>
+          ${params ? `<div class="prms">${params}</div>` : ''}
+          ${op.desc ? `<p class="step-desc">${esc(op.desc)}</p>` : ''}
+          <p class="step-err" data-err></p>
+        </li>`;
+      })
+      .join('');
+    saveHash();
+  }
+
+  stepsEl.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
+    if (!b) return;
+    const i = +b.closest<HTMLElement>('[data-step]')!.dataset.step!;
+    const act = b.dataset.act;
+    if (act === 'del') recipe.splice(i, 1);
+    else if (act === 'off') recipe[i].off = !recipe[i].off;
+    else {
+      const j = act === 'up' ? i - 1 : i + 1;
+      [recipe[i], recipe[j]] = [recipe[j], recipe[i]];
+    }
+    renderSteps();
+    bake();
+  });
+
+  const onParam = (e: Event) => {
+    const el = e.target as HTMLInputElement;
+    if (!el.dataset.p) return;
+    const s = recipe[+el.dataset.i!];
+    const j = +el.dataset.p;
+    if (el.dataset.k) s.args[j] = { ...s.args[j], [el.dataset.k]: el.value };
+    else s.args[j] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? +el.value : el.value;
+    saveHash();
+    bake();
+  };
+  stepsEl.addEventListener('input', onParam);
+  stepsEl.addEventListener('change', onParam);
+
+  /* ---------- Bake ---------- */
+  const isText = (b: Bytes) => {
+    try {
+      const s = new TextDecoder('utf-8', { fatal: true }).decode(b);
+      return !/[\x00-\x08\x0e-\x1f\x7f]/.test(s);
+    } catch {
+      return false;
+    }
+  };
+  const size = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`);
+
+  let run = 0;
+  let timer = 0;
+  function bake() {
+    clearTimeout(timer);
+    timer = window.setTimeout(doBake, 80);
+  }
+  async function doBake() {
+    const my = ++run;
+    const t0 = performance.now();
+    let data: Bytes = fileBytes ?? utf8(input.value);
+    inMeta.textContent = data.length ? size(data.length) : '';
+    stepsEl.querySelectorAll('[data-step]').forEach((el) => el.removeAttribute('data-err'));
+    out.removeAttribute('data-err');
+    for (const [i, s] of recipe.entries()) {
+      if (s.off) continue;
+      try {
+        data = await OP[s.id].run(data, s.args);
+      } catch (err) {
+        if (my !== run) return;
+        const el = stepsEl.querySelector<HTMLElement>(`[data-step="${i}"]`);
+        const msg = (err as Error).message || '执行失败';
+        if (el) {
+          el.setAttribute('data-err', '');
+          el.querySelector('[data-err]')!.textContent = msg;
+        }
+        out.setAttribute('data-err', '');
+        out.textContent = `第 ${i + 1} 步「${OP[s.id].name}」出错：${msg}`;
+        outMeta.textContent = '';
+        result = new Uint8Array();
+        return;
+      }
+    }
+    if (my !== run) return;
+    result = data;
+    const textual = isText(data);
+    const asHex = hexBtn.getAttribute('aria-pressed') === 'true' || !textual;
+    out.textContent = asHex ? hex(data, ' ') : text(data);
+    outMeta.textContent = data.length
+      ? `${size(data.length)}${textual ? '' : ' · 二进制'} · ${Math.max(1, Math.round(performance.now() - t0))} ms`
+      : '';
+  }
+
+  /* ---------- Share via URL hash (recipe only) ---------- */
+  const b64u = (s: string) => btoa(String.fromCharCode(...utf8(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64u = (s: string) => text(Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
+  function saveHash() {
+    const data = recipe.map((s) => [s.id, s.args, s.off ? 1 : 0]);
+    history.replaceState(null, '', recipe.length ? `#recipe=${b64u(JSON.stringify(data))}` : location.pathname);
+  }
+  function loadHash() {
+    const m = /recipe=([\w-]+)/.exec(location.hash);
+    if (!m) return false;
+    try {
+      recipe = (JSON.parse(unb64u(m[1])) as [string, any[], number][])
+        .filter(([id]) => OP[id])
+        .map(([id, args, off]) => ({ id, args: defaults(id).map((d, j) => args?.[j] ?? d), off: !!off }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /* ---------- Toolbar ---------- */
+  input.addEventListener('input', () => {
+    fileBytes = null;
+    input.readOnly = false;
+    bake();
+  });
+  $('[data-clear]').addEventListener('click', () => {
+    fileBytes = null;
+    input.readOnly = false;
+    input.value = '';
+    bake();
+    input.focus();
+  });
+  $('[data-reset]').addEventListener('click', () => {
+    recipe = [];
+    renderSteps();
+    bake();
+  });
+  $('[data-share]').addEventListener('click', (e) => copy(location.href, e.currentTarget as HTMLElement));
+  $('[data-copy]').addEventListener('click', (e) => copy(out.textContent ?? '', e.currentTarget as HTMLElement));
+  hexBtn.addEventListener('click', () => {
+    hexBtn.setAttribute('aria-pressed', String(hexBtn.getAttribute('aria-pressed') !== 'true'));
+    doBake();
+  });
+  $('[data-swap]').addEventListener('click', () => {
+    if (!result.length) return;
+    if (isText(result)) {
+      fileBytes = null;
+      input.readOnly = false;
+      input.value = text(result);
+    } else setFile(result, '上一步输出');
+    recipe = [];
+    renderSteps();
+    bake();
+  });
+
+  const magicBtn = $<HTMLButtonElement>('[data-magic]');
+  magicBtn.addEventListener('click', async () => {
+    const steps = await magic(fileBytes ?? utf8(input.value));
+    if (!steps.length) {
+      magicBtn.textContent = '没认出来';
+      setTimeout(() => (magicBtn.textContent = '✦ Magic'), 1400);
+      return;
+    }
+    recipe = steps.map((id) => ({ id, args: defaults(id) }));
+    renderSteps();
+    bake();
+    magicBtn.textContent = `✦ 剥开 ${steps.length} 层`;
+    setTimeout(() => (magicBtn.textContent = '✦ Magic'), 1800);
+  });
+
+  /* ---------- File drop ---------- */
+  function setFile(b: Bytes, name: string) {
+    fileBytes = b;
+    input.value = `[${name} · ${size(b.length)}]\n` + (isText(b) ? text(b).slice(0, 4000) : hex(b.subarray(0, 512), ' '));
+    input.readOnly = true;
+  }
+  input.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    input.setAttribute('data-drop', '');
+  });
+  input.addEventListener('dragleave', () => input.removeAttribute('data-drop'));
+  input.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    input.removeAttribute('data-drop');
+    const f = e.dataTransfer?.files[0];
+    if (!f) return;
+    if (f.size > 20 * 1048576) {
+      alert('文件超过 20 MB');
+      return;
+    }
+    setFile(new Uint8Array(await f.arrayBuffer()), f.name);
+    bake();
+  });
+
+  /* ---------- Boot ---------- */
+  if (!loadHash()) {
+    input.value = 'H4sIAAAAAAAC/3uyf+6znsanS/c+Xdr+fk/PEzD35awJz5fPAHJf7N/7YseqZ7OmP9278XFDEwDOCIz1LQAAAA==';
+    recipe = [
+      { id: 'b64d', args: [] },
+      { id: 'gunzip', args: [] },
+    ];
+  }
+  renderSteps();
+  bake();
+</script>
+
+<style>
+  .chef {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .io {
+    display: grid;
+    gap: 16px;
+  }
+
+  /* Operations */
+  .ops {
+    position: sticky;
+    top: calc(var(--header-h) + 16px);
+  }
+  .op-search {
+    height: 44px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .op-list {
+    max-height: min(560px, calc(100dvh - var(--header-h) - 140px));
+    overflow: auto;
+    padding: 4px 0 10px;
+  }
+  .op-list :global(.grp) {
+    margin: 12px 16px 4px;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .op-list :global(button) {
+    display: block;
+    width: 100%;
+    padding: 5px 16px;
+    border: 0;
+    background: none;
+    color: var(--fg-2);
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      background-color 0.15s;
+  }
+  .op-list :global(button:hover) {
+    color: var(--accent-text);
+    background: var(--accent-soft);
+  }
+  .op-list :global(button::before) {
+    content: '+ ';
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+  }
+  .op-list :global(.none) {
+    padding: 16px;
+    color: var(--fg-3);
+    font-size: 13px;
+  }
+
+  /* Recipe */
+  .recipe {
+    min-height: 420px;
+  }
+  .steps {
+    margin: 0;
+    padding: 10px;
+    list-style: none;
+    counter-reset: s;
+  }
+  .steps:empty {
+    display: none;
+  }
+  .steps :global(.step) {
+    position: relative;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    background: var(--bg);
+    transition:
+      border-color 0.2s,
+      opacity 0.2s;
+  }
+  .steps :global(.step + .step) {
+    margin-top: 18px;
+  }
+  /* The pipe between steps */
+  .steps :global(.step + .step)::before {
+    content: '';
+    position: absolute;
+    top: -19px;
+    left: 26px;
+    width: 1px;
+    height: 18px;
+    background: linear-gradient(var(--accent-line), var(--accent));
+  }
+  .steps :global(.step[data-off]) {
+    opacity: 0.45;
+    border-style: dashed;
+  }
+  .steps :global(.step[data-err]) {
+    border-color: var(--danger);
+  }
+  .steps :global(.step-head) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .steps :global(.idx) {
+    color: var(--accent-text);
+    font-size: 11px;
+  }
+  .steps :global(.step-head b) {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .steps :global(.step-acts) {
+    display: flex;
+    gap: 2px;
+  }
+  .steps :global(.step-acts button) {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--fg-3);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .steps :global(.step-acts button:hover) {
+    color: var(--fg);
+    background: var(--bg-hover);
+  }
+  .steps :global(.step-acts button[data-act='del']:hover) {
+    color: var(--danger);
+  }
+  .steps :global(.step-acts button[aria-pressed='true']) {
+    color: var(--warn);
+  }
+  .steps :global(.step-acts button:disabled) {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+  .steps :global(.prms) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .steps :global(.prm) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+  .steps :global(.prm:has(.keyf)) {
+    flex-basis: 100%;
+  }
+  .steps :global(.prm > span:first-child) {
+    color: var(--fg-3);
+    font-size: 11.5px;
+  }
+  .steps :global(.fld) {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--bg-inset);
+    color: var(--fg);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .steps :global(.fld:focus) {
+    border-color: var(--accent-line);
+  }
+  .steps :global(select.fld) {
+    padding-right: 4px;
+    cursor: pointer;
+  }
+  .steps :global(.keyf) {
+    display: flex;
+    gap: 4px;
+  }
+  .steps :global(.keyf select) {
+    flex: 0 0 82px;
+  }
+  .steps :global(.opt) {
+    align-self: flex-end;
+  }
+  .steps :global(.step-desc) {
+    margin: 8px 0 0;
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+  .steps :global(.step-err) {
+    display: none;
+    margin: 8px 0 0;
+    color: var(--danger);
+    font-size: 12.5px;
+  }
+  .steps :global(.step[data-err] .step-err) {
+    display: block;
+  }
+
+  /* IO */
+  .meta {
+    margin-left: 6px;
+    color: var(--fg-3);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  #chef-in {
+    min-height: 180px;
+  }
+  #chef-in[readonly] {
+    color: var(--fg-2);
+  }
+  #chef-in[data-drop] {
+    background: var(--accent-soft);
+    outline: 1px dashed var(--accent);
+    outline-offset: -8px;
+  }
+  .out {
+    min-height: 180px;
+    max-height: 480px;
+    margin: 0;
+    padding: 16px;
+    overflow: auto;
+    color: var(--accent-text);
+    font-size: 13.5px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .out[data-err] {
+    color: var(--danger);
+  }
+  .hint a {
+    color: var(--fg-2);
+  }
+
+  @media (max-width: 1100px) {
+    .chef {
+      grid-template-columns: 200px minmax(0, 1fr);
+    }
+    .io {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 720px) {
+    .chef {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .ops {
+      position: static;
+    }
+    .op-list {
+      max-height: 220px;
+    }
+    .recipe {
+      min-height: 0;
+    }
+  }
+</style>
