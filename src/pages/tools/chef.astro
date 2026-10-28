@@ -33,8 +33,7 @@ import Tool from '../../layouts/Tool.astro';
       <p class="empty" data-steps-empty>从左侧点选操作，<br />它们会自上而下依次执行。</p>
     </section>
 
-    <div class="io">
-      <section class="pane">
+    <section class="pane in-pane">
         <div class="pane-bar">
           <span>Input <span class="meta" data-in-meta></span></span>
           <div class="pane-acts">
@@ -44,19 +43,21 @@ import Tool from '../../layouts/Tool.astro';
         </div>
         <textarea class="tarea" id="chef-in" spellcheck="false" placeholder="输入文本，或把文件拖进来" aria-label="输入"
         ></textarea>
-      </section>
-      <section class="pane out-pane">
+    </section>
+    <section class="pane out-pane">
         <div class="pane-bar">
           <span>Output <span class="meta" data-out-meta></span></span>
           <div class="pane-acts">
+            <button class="tbtn" type="button" data-json aria-pressed="true" hidden title="JSON 树形视图">{ } JSON</button>
+            <button class="tbtn" type="button" data-fold hidden>全部折叠</button>
             <button class="tbtn" type="button" data-hexview aria-pressed="false">Hex</button>
+            <button class="tbtn" type="button" data-full title="全屏查看（Esc 退出）">⤢ 全屏</button>
             <button class="tbtn" type="button" data-swap title="把输出作为新的输入">↑ 回填</button>
             <button class="tbtn" type="button" data-copy>复制</button>
           </div>
         </div>
-        <pre class="out mono" data-out></pre>
+        <div class="out mono" data-out></div>
       </section>
-    </div>
   </div>
   <p class="hint">
     致敬 GCHQ 的 <a href="https://github.com/gchq/CyberChef" target="_blank" rel="noopener">CyberChef</a>：每一步都以字节为单位传递，文本、二进制、密文可以随意串联。配方存在链接里，复制即可分享；输入永远不会进入链接。
@@ -78,6 +79,11 @@ import Tool from '../../layouts/Tool.astro';
   const outMeta = $('[data-out-meta]');
   const inMeta = $('[data-in-meta]');
   const hexBtn = $('[data-hexview]');
+  const jsonBtn = $('[data-json]');
+  const foldBtn = $('[data-fold]');
+  const fullBtn = $('[data-full]');
+  const outPane = $('.out-pane');
+  let copyText = '';
 
   const defaults = (id: string) => (OP[id].params ?? []).map((p) => structuredClone(p.value));
   let recipe: Step[] = [];
@@ -238,20 +244,95 @@ import Tool from '../../layouts/Tool.astro';
           el.querySelector('[data-err]')!.textContent = msg;
         }
         out.setAttribute('data-err', '');
-        out.textContent = `第 ${i + 1} 步「${OP[s.id].name}」出错：${msg}`;
+        out.dataset.mode = 'text';
+        out.textContent = copyText = `第 ${i + 1} 步「${OP[s.id].name}」出错：${msg}`;
         outMeta.textContent = '';
+        jsonBtn.hidden = foldBtn.hidden = true;
         result = new Uint8Array();
         return;
       }
     }
     if (my !== run) return;
     result = data;
+    const kind = show(data);
+    outMeta.textContent = data.length ? `${size(data.length)}${kind} · ${Math.max(1, Math.round(performance.now() - t0))} ms` : '';
+  }
+
+  const pressed = (b: HTMLElement) => b.getAttribute('aria-pressed') === 'true';
+
+  /** Paint the output; returns a short label for the meta line. */
+  function show(data: Bytes) {
     const textual = isText(data);
-    const asHex = hexBtn.getAttribute('aria-pressed') === 'true' || !textual;
-    out.textContent = asHex ? hex(data, ' ') : text(data);
-    outMeta.textContent = data.length
-      ? `${size(data.length)}${textual ? '' : ' · 二进制'} · ${Math.max(1, Math.round(performance.now() - t0))} ms`
-      : '';
+    const asHex = pressed(hexBtn) || !textual;
+    let parsed: unknown;
+    let isJson = false;
+    if (!asHex) {
+      const s = text(data).trim();
+      if (/^[[{]/.test(s) && s.length < 8 * 1048576)
+        try {
+          parsed = JSON.parse(s);
+          isJson = true;
+        } catch {}
+    }
+    jsonBtn.hidden = !isJson;
+    foldBtn.hidden = !isJson || !pressed(jsonBtn);
+    if (isJson && pressed(jsonBtn)) {
+      copyText = JSON.stringify(parsed, null, 2);
+      const tree = jsonTree(parsed);
+      if (tree) {
+        out.dataset.mode = 'json';
+        out.innerHTML = tree;
+        foldBtn.textContent = '全部折叠';
+      } else {
+        out.dataset.mode = 'text';
+        out.textContent = copyText;
+      }
+      return ' · JSON';
+    }
+    out.dataset.mode = 'text';
+    out.textContent = copyText = asHex ? hex(data, ' ') : text(data);
+    return textual ? '' : ' · 二进制';
+  }
+
+  /* ---------- JSON tree ---------- */
+  const IDENT = /^[A-Za-z_$][\w$]*$/;
+  function jsonTree(root: unknown) {
+    let nodes = 0;
+    const keyHtml = (k: string | number | null) =>
+      k === null
+        ? ''
+        : typeof k === 'number'
+          ? `<span class="j-idx">${k}</span><span class="j-p">: </span>`
+          : `<span class="j-key">"${esc(JSON.stringify(k).slice(1, -1))}"</span><span class="j-p">: </span>`;
+    const prim = (x: unknown) =>
+      x === null
+        ? '<span class="j-lit">null</span>'
+        : typeof x === 'string'
+          ? `<span class="j-str">"${esc(JSON.stringify(x).slice(1, -1))}"</span>`
+          : typeof x === 'number'
+            ? `<span class="j-num">${x}</span>`
+            : `<span class="j-lit">${x}</span>`;
+    const walk = (x: unknown, k: string | number | null, path: string, depth: number, comma: boolean): string => {
+      if (++nodes > 20000) throw new Error('too big');
+      const c = comma ? '<span class="j-p">,</span>' : '';
+      if (x === null || typeof x !== 'object') return `<div class="jl" title="${esc(path)}">${keyHtml(k)}${prim(x)}${c}</div>`;
+      const arr = Array.isArray(x);
+      const entries: [string | number, unknown][] = arr ? (x as unknown[]).map((v, i) => [i, v]) : Object.entries(x);
+      const [o, cl] = arr ? ['[', ']'] : ['{', '}'];
+      if (!entries.length) return `<div class="jl">${keyHtml(k)}<span class="j-p">${o}${cl}</span>${c}</div>`;
+      const open = depth < 3 || entries.length <= 12;
+      const kids = entries
+        .map(([kk, vv], i) =>
+          walk(vv, kk, arr ? `${path}[${kk}]` : IDENT.test(String(kk)) ? `${path}.${kk}` : `${path}[${JSON.stringify(kk)}]`, depth + 1, i < entries.length - 1),
+        )
+        .join('');
+      return `<details${open ? ' open' : ''}><summary title="${esc(path)}">${keyHtml(k)}<span class="j-p">${o}</span><span class="j-fold"> … ${cl} <i>${entries.length} ${arr ? '项' : '键'}</i></span>${c && `<span class="j-fold">${c}</span>`}</summary><div class="jc">${kids}</div><div class="jl"><span class="j-p">${cl}</span>${c}</div></details>`;
+    };
+    try {
+      return walk(root, null, '$', 0, false);
+    } catch {
+      return null; // too large for a tree; fall back to pretty text
+    }
   }
 
   /* ---------- Share via URL hash (recipe only) ---------- */
@@ -293,7 +374,25 @@ import Tool from '../../layouts/Tool.astro';
     bake();
   });
   $('[data-share]').addEventListener('click', (e) => copy(location.href, e.currentTarget as HTMLElement));
-  $('[data-copy]').addEventListener('click', (e) => copy(out.textContent ?? '', e.currentTarget as HTMLElement));
+  $('[data-copy]').addEventListener('click', (e) => copy(copyText, e.currentTarget as HTMLElement));
+  jsonBtn.addEventListener('click', () => {
+    jsonBtn.setAttribute('aria-pressed', String(!pressed(jsonBtn)));
+    doBake();
+  });
+  foldBtn.addEventListener('click', () => {
+    const all = [...out.querySelectorAll('details')];
+    const collapse = foldBtn.textContent === '全部折叠';
+    // Keep the root open so the outline stays readable
+    all.forEach((d, i) => (d.open = !collapse || i === 0));
+    foldBtn.textContent = collapse ? '全部展开' : '全部折叠';
+  });
+  const setFull = (on: boolean) => {
+    outPane.toggleAttribute('data-full', on);
+    document.documentElement.style.overflow = on ? 'hidden' : '';
+    fullBtn.textContent = on ? '✕ 退出全屏' : '⤢ 全屏';
+  };
+  fullBtn.addEventListener('click', () => setFull(!outPane.hasAttribute('data-full')));
+  addEventListener('keydown', (e) => e.key === 'Escape' && outPane.hasAttribute('data-full') && setFull(false));
   hexBtn.addEventListener('click', () => {
     hexBtn.setAttribute('aria-pressed', String(hexBtn.getAttribute('aria-pressed') !== 'true'));
     doBake();
@@ -365,12 +464,29 @@ import Tool from '../../layouts/Tool.astro';
   .chef {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr) minmax(0, 1.25fr);
+    grid-template-areas:
+      'ops recipe in'
+      'ops out out';
     gap: 16px;
     align-items: start;
   }
-  .io {
-    display: grid;
-    gap: 16px;
+  .ops {
+    grid-area: ops;
+  }
+  .recipe {
+    grid-area: recipe;
+    align-self: stretch;
+  }
+  .in-pane {
+    grid-area: in;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+  }
+  .out-pane {
+    grid-area: out;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Operations */
@@ -426,7 +542,7 @@ import Tool from '../../layouts/Tool.astro';
 
   /* Recipe */
   .recipe {
-    min-height: 420px;
+    min-height: 300px;
   }
   .steps {
     margin: 0;
@@ -587,7 +703,8 @@ import Tool from '../../layouts/Tool.astro';
     letter-spacing: 0;
   }
   #chef-in {
-    min-height: 180px;
+    flex: 1;
+    min-height: 220px;
   }
   #chef-in[readonly] {
     color: var(--fg-2);
@@ -598,19 +715,123 @@ import Tool from '../../layouts/Tool.astro';
     outline-offset: -8px;
   }
   .out {
-    min-height: 180px;
-    max-height: 480px;
+    flex: 1;
+    min-height: 320px;
+    max-height: max(420px, 72vh);
     margin: 0;
-    padding: 16px;
+    padding: 16px 20px;
     overflow: auto;
     color: var(--accent-text);
     font-size: 13.5px;
     line-height: 1.75;
+    resize: vertical;
+  }
+  .out[data-mode='text'] {
     white-space: pre-wrap;
     word-break: break-all;
   }
   .out[data-err] {
     color: var(--danger);
+  }
+
+  /* Fullscreen output */
+  .out-pane[data-full] {
+    position: fixed;
+    inset: 12px;
+    z-index: 60;
+    background: var(--bg-elev);
+    box-shadow:
+      0 0 0 100vmax color-mix(in oklab, var(--bg) 70%, transparent),
+      var(--shadow-lg);
+  }
+  .out-pane[data-full] .out {
+    max-height: none;
+    resize: none;
+    font-size: 14px;
+  }
+
+  /* JSON tree */
+  .out[data-mode='json'] {
+    color: var(--fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .out :global(details) {
+    position: relative;
+  }
+  .out :global(summary) {
+    list-style: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .out :global(summary::-webkit-details-marker) {
+    display: none;
+  }
+  .out :global(summary:hover) {
+    background: var(--bg-hover);
+  }
+  /* Caret sits in the gutter left of the line */
+  .out :global(summary::before) {
+    content: '▸';
+    position: absolute;
+    left: -14px;
+    color: var(--fg-3);
+    font-size: 10px;
+    line-height: 2.3;
+    transition: transform 0.15s;
+  }
+  .out :global(details[open] > summary::before) {
+    transform: rotate(90deg);
+  }
+  .out :global(details[open] > summary .j-fold) {
+    display: none;
+  }
+  .out :global(.j-fold) {
+    color: var(--fg-3);
+  }
+  .out :global(.j-fold i) {
+    margin-left: 4px;
+    font-size: 11px;
+    font-style: normal;
+  }
+  .out :global(.jc) {
+    margin-left: 4px;
+    padding-left: 18px;
+    border-left: 1px solid var(--line);
+  }
+  .out :global(details[open] > .jc:hover) {
+    border-left-color: var(--accent-line);
+  }
+  .out :global(.jl) {
+    border-radius: 4px;
+  }
+  .out :global(.jl:hover) {
+    background: var(--bg-hover);
+  }
+  .out :global(.j-key) {
+    color: var(--fg);
+  }
+  .out :global(.j-idx) {
+    color: var(--fg-3);
+  }
+  .out :global(.j-p) {
+    color: var(--fg-3);
+  }
+  .out :global(.j-str) {
+    color: var(--accent-text);
+  }
+  .out :global(.j-num) {
+    color: var(--warn);
+  }
+  .out :global(.j-lit) {
+    color: #7aa2ff;
+  }
+  :global(:root[data-theme='light']) .out :global(.j-lit) {
+    color: #2f5bd3;
+  }
+  .out :global(details:not([open]) > summary + .jc),
+  .out :global(details:not([open]) > .jc + .jl) {
+    display: none;
   }
   .hint a {
     color: var(--fg-2);
@@ -619,14 +840,16 @@ import Tool from '../../layouts/Tool.astro';
   @media (max-width: 1100px) {
     .chef {
       grid-template-columns: 200px minmax(0, 1fr);
-    }
-    .io {
-      grid-column: 1 / -1;
+      grid-template-areas:
+        'ops recipe'
+        'in in'
+        'out out';
     }
   }
   @media (max-width: 720px) {
     .chef {
       grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'ops' 'recipe' 'in' 'out';
     }
     .ops {
       position: static;
@@ -636,6 +859,10 @@ import Tool from '../../layouts/Tool.astro';
     }
     .recipe {
       min-height: 0;
+    }
+    .out {
+      min-height: 260px;
+      padding: 14px 14px 14px 18px;
     }
   }
 </style>
