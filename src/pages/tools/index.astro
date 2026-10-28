@@ -36,7 +36,7 @@ import { TOOLS, toolId, toolUrl } from '../../lib/tools';
         ))
       }
       {TOOLS.length % 3 !== 0 && (
-      <li class="soon" data-reveal style={`--d:${TOOLS.length}`}>
+      <li class="soon" data-reveal style={`--d:${TOOLS.length};--span:${3 - (TOOLS.length % 3)}`}>
         <span class="mono idx">{toolId(TOOLS.length)}</span>
         <p>下一把刀，<br />正在磨。</p>
         <span class="mono cursor" aria-hidden="true">_</span>
@@ -168,6 +168,11 @@ import { TOOLS, toolId, toolUrl } from '../../lib/tools';
     }
   }
 
+  @media (min-width: 1001px) {
+    .soon {
+      grid-column: span var(--span);
+    }
+  }
   @media (max-width: 1000px) {
     .tools {
       grid-template-columns: repeat(2, minmax(0, 1fr));

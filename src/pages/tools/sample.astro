@@ -1,0 +1,725 @@
+---
+import Tool from '../../layouts/Tool.astro';
+import Icon from '../../components/Icon.astro';
+---
+
+<Tool slug="sample">
+  <label class="drop" data-drop>
+    <input type="file" data-file hidden />
+    <span class="drop-ico"><Icon name="chip" size={26} /></span>
+    <b>拖入样本，或点击选择</b>
+    <span class="mono">PE · ELF · APK / JAR / Office · PDF · 任意文件 ≤ 64 MB</span>
+  </label>
+
+  <div class="result" data-result hidden>
+    <div class="filebar pane">
+      <span class="fname mono" data-fname></span>
+      <span class="kind mono" data-kind></span>
+      <button class="tbtn" type="button" data-again>换一个</button>
+    </div>
+
+    <div class="cols-2">
+      <section class="pane">
+        <div class="pane-bar"><span>概览</span></div>
+        <table class="kv"><tbody data-facts></tbody></table>
+      </section>
+      <div class="stack">
+        <section class="pane">
+          <div class="pane-bar"><span>指纹</span><a class="tbtn" data-vt target="_blank" rel="noopener">VirusTotal ↗</a></div>
+          <table class="kv hashes"><tbody data-hashes></tbody></table>
+        </section>
+        <section class="pane" data-mit-pane>
+          <div class="pane-bar"><span>安全机制</span></div>
+          <ul class="mits mono" data-mits></ul>
+        </section>
+      </div>
+    </div>
+
+    <section class="pane">
+      <div class="pane-bar"><span>研判 <span class="n" data-nflags></span></span></div>
+      <ul class="findings" data-flags></ul>
+    </section>
+
+    <section class="pane">
+      <div class="pane-bar">
+        <span>熵分布</span>
+        <span class="readout mono" data-readout>悬停查看偏移与熵值</span>
+      </div>
+      <div class="ent-wrap"><canvas data-ent height="140"></canvas></div>
+      <div class="ent-scale mono"><span>0 · 规整数据</span><span>~6 · 代码</span><span>7.2+ · 压缩 / 加密</span></div>
+    </section>
+
+    <section class="pane">
+      <div class="tabs" role="tablist" data-tabs></div>
+      <div class="tab-body" data-tab-body></div>
+    </section>
+  </div>
+
+  <p class="hint">
+    纯静态解析，不执行任何代码，样本不会离开浏览器。哈希可复制去威胁情报平台查询；点 VirusTotal 链接只会发送 SHA256。imphash 与 pefile 算法一致（按序号导入的 ws2_32 / oleaut32 以 ordN 计）。
+  </p>
+</Tool>
+
+<script>
+  import { $, $$, copy, esc } from '../../lib/tool-client';
+  import { md5, hex } from '../../lib/chef-ops';
+  import { apiTag, dissect, entropy, entropyBlocks, extractStrings, type Report, type Str } from '../../lib/binary';
+
+  const MAX = 64 * 1048576;
+  const drop = $('[data-drop]');
+  const fileIn = $<HTMLInputElement>('[data-file]');
+  const result = $('[data-result]');
+  const canvas = $<HTMLCanvasElement>('[data-ent]');
+  const readout = $('[data-readout]');
+
+  const SEV_LABEL = { high: '高危', mid: '可疑', low: '提示', info: '信息' } as const;
+  const API_SEV: Record<string, keyof typeof SEV_LABEL> = {
+    进程注入: 'high', 钩子键盘: 'mid', 提权: 'mid', 持久化: 'mid', 反调试: 'low', 命令执行: 'low',
+    网络: 'low', 加密: 'low', 动态加载: 'low', 内存权限: 'low', 枚举进程: 'low',
+  };
+  const size = (n: number) => (n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(2)} MB`);
+  const hx = (n: number) => '0x' + n.toString(16).toUpperCase();
+
+  let bytes = new Uint8Array();
+  let report: Report;
+  let strings: Str[] = [];
+  let blocks = { size: 256, values: [] as number[] };
+
+  /* ---------- Load ---------- */
+  drop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    drop.setAttribute('data-over', '');
+  });
+  drop.addEventListener('dragleave', () => drop.removeAttribute('data-over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.removeAttribute('data-over');
+    const f = e.dataTransfer?.files[0];
+    if (f) load(f);
+  });
+  fileIn.addEventListener('change', () => fileIn.files?.[0] && load(fileIn.files[0]));
+  $('[data-again]').addEventListener('click', () => {
+    fileIn.value = '';
+    fileIn.click();
+  });
+  // Dropping anywhere on the page once a result is showing
+  addEventListener('dragover', (e) => e.preventDefault());
+  addEventListener('drop', (e) => {
+    if (drop.contains(e.target as Node)) return;
+    e.preventDefault();
+    const f = e.dataTransfer?.files[0];
+    if (f) load(f);
+  });
+
+  async function load(f: File) {
+    if (f.size > MAX) {
+      alert('文件超过 64 MB');
+      return;
+    }
+    drop.querySelector('b')!.textContent = '解析中…';
+    bytes = new Uint8Array(await f.arrayBuffer());
+    // Yield so the "parsing" label paints before the heavy work
+    await new Promise((r) => setTimeout(r, 30));
+    report = dissect(bytes);
+    blocks = entropyBlocks(bytes);
+    strings = extractStrings(bytes.length > 32 * 1048576 ? bytes.subarray(0, 32 * 1048576) : bytes);
+    const [sha1, sha256] = await Promise.all(
+      ['SHA-1', 'SHA-256'].map(async (a) => hex(new Uint8Array(await crypto.subtle.digest(a, bytes)))),
+    );
+    const hashes: [string, string][] = [
+      ['MD5', hex(md5(bytes))],
+      ['SHA-1', sha1],
+      ['SHA-256', sha256],
+    ];
+    if (report.imphashInput) hashes.push(['imphash', hex(md5(new TextEncoder().encode(report.imphashInput)))]);
+
+    $('[data-fname]').textContent = f.name;
+    $('[data-kind]').textContent = `${report.kind} · ${size(bytes.length)}`;
+    renderFacts();
+    $('[data-hashes]').innerHTML = hashes
+      .map(([k, v]) => `<tr><th>${k}</th><td><button type="button" class="hv" data-copyv>${v}</button></td></tr>`)
+      .join('');
+    $<HTMLAnchorElement>('[data-vt]').href = `https://www.virustotal.com/gui/file/${sha256}`;
+    renderMits();
+    renderFlags();
+    renderTabs();
+    drop.hidden = true;
+    result.hidden = false;
+    drop.querySelector('b')!.textContent = '拖入样本，或点击选择';
+    drawEntropy();
+  }
+
+  $('[data-hashes]').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-copyv]');
+    if (b) copy(b.textContent!, b);
+  });
+
+  /* ---------- Overview ---------- */
+  function renderFacts() {
+    const total = entropy(bytes);
+    const rows = [
+      ...report.facts,
+      ['大小', `${bytes.length.toLocaleString()} 字节`],
+      ['整体熵', total.toFixed(3), total > 7.5 ? '接近随机：压缩、加密或加壳' : undefined],
+    ];
+    $('[data-facts]').innerHTML = rows
+      .map(([k, v, n]) => `<tr><th>${esc(k!)}</th><td>${esc(v!)}${n ? `<small>${esc(n)}</small>` : ''}</td></tr>`)
+      .join('');
+  }
+
+  function renderMits() {
+    $('[data-mit-pane]').hidden = !report.mitigations.length;
+    $('[data-mits]').innerHTML = report.mitigations
+      .map((m) => `<li ${m.on ? 'data-on' : ''} title="${esc(m.note ?? '')}">${esc(m.name)}${m.note ? `<span>${esc(m.note)}</span>` : ''}</li>`)
+      .join('');
+  }
+
+  function apiGroups() {
+    const g = new Map<string, Set<string>>();
+    for (const imp of report.imports)
+      for (const f of imp.fns) {
+        const t = apiTag(f);
+        if (t) g.set(t, (g.get(t) ?? new Set()).add(f));
+      }
+    return g;
+  }
+
+  function renderFlags() {
+    const list = [...report.flags];
+    for (const [tag, fns] of apiGroups()) {
+      const arr = [...fns];
+      list.push({ sev: API_SEV[tag] ?? 'low', text: `${tag}：${arr.slice(0, 6).join('、')}${arr.length > 6 ? ` 等 ${arr.length} 个` : ''}` });
+    }
+    const hits = strings.filter((s) => s.tag);
+    const byTag = new Map<string, number>();
+    for (const s of hits) byTag.set(s.tag!, (byTag.get(s.tag!) ?? 0) + 1);
+    if (byTag.size)
+      list.push({ sev: 'info', text: `字符串命中 ${[...byTag].map(([t, n]) => `${t} ${n}`).join(' · ')}，见「字符串」页` });
+    const order = ['high', 'mid', 'low', 'info'];
+    list.sort((a, b) => order.indexOf(a.sev) - order.indexOf(b.sev));
+    const bad = list.filter((f) => f.sev === 'high' || f.sev === 'mid').length;
+    $('[data-nflags]').textContent = bad ? String(bad) : '';
+    $('[data-flags]').innerHTML = list.length
+      ? list.map((f) => `<li><span class="sev sev-${f.sev}">${SEV_LABEL[f.sev]}</span><div>${esc(f.text)}</div></li>`).join('')
+      : '<li class="none"><p>没有发现明显可疑点。静态分析有局限，不代表样本安全。</p></li>';
+  }
+
+  /* ---------- Entropy map ---------- */
+  const probe = document.createElement('i');
+  probe.style.display = 'none';
+  document.body.append(probe);
+  const resolve = (v: string) => {
+    probe.style.color = `var(${v})`;
+    return getComputedStyle(probe).color;
+  };
+  const marks = () =>
+    report.sections
+      .filter((s) => s.size > 0 && s.off < bytes.length)
+      .map((s) => ({ name: s.name || '?', start: s.off, end: Math.min(bytes.length, s.off + s.size) }));
+
+  function drawEntropy() {
+    const dpr = devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = 140;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+    const [accent, danger, warn, line, fg3] = ['--accent', '--danger', '--warn', '--line-strong', '--fg-3'].map(resolve);
+    const top = 22;
+    const H = h - top - 6;
+    // Guide at 7.2
+    ctx.strokeStyle = line;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, top + H * (1 - 7.2 / 8));
+    ctx.lineTo(w, top + H * (1 - 7.2 / 8));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Bars
+    const n = blocks.values.length;
+    const bw = w / n;
+    blocks.values.forEach((v, i) => {
+      ctx.fillStyle = v > 7.2 ? danger : v > 6.5 ? warn : accent;
+      ctx.globalAlpha = 0.25 + (v / 8) * 0.75;
+      const bh = Math.max(1, (v / 8) * H);
+      ctx.fillRect(i * bw, top + H - bh, Math.max(1, bw - (bw > 3 ? 0.5 : 0)), bh);
+    });
+    ctx.globalAlpha = 1;
+    // Section boundaries
+    ctx.font = '10.5px "Geist Mono Variable", ui-monospace, monospace';
+    ctx.textBaseline = 'top';
+    let lastLabel = -100;
+    for (const m of marks()) {
+      const x = (m.start / bytes.length) * w;
+      ctx.fillStyle = line;
+      ctx.fillRect(x, top - 4, 1, H + 4);
+      const label = m.name.slice(0, 10);
+      if (x + 3 > lastLabel + 8) {
+        ctx.fillStyle = fg3;
+        ctx.fillText(label, x + 3, 4);
+        lastLabel = x + 3 + ctx.measureText(label).width;
+      }
+    }
+  }
+  addEventListener('resize', () => !result.hidden && drawEntropy());
+  canvas.addEventListener('pointermove', (e) => {
+    const r = canvas.getBoundingClientRect();
+    const i = Math.min(blocks.values.length - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * blocks.values.length)));
+    const off = i * blocks.size;
+    const sec = marks().find((m) => off >= m.start && off < m.end);
+    readout.textContent = `${hx(off)} · 熵 ${blocks.values[i].toFixed(2)}${sec ? ` · ${sec.name}` : ''}`;
+  });
+  canvas.addEventListener('pointerleave', () => (readout.textContent = '悬停查看偏移与熵值'));
+
+  /* ---------- Tabs ---------- */
+  type Tab = { id: string; label: string; n?: number; render: () => string };
+  let active = '';
+  let strQuery = '';
+  let strOnlyHits = false;
+
+  function tabs(): Tab[] {
+    const t: Tab[] = [];
+    if (report.sections.length) t.push({ id: 'sec', label: '节区', n: report.sections.length, render: renderSections });
+    const nImp = report.imports.reduce((s, g) => s + g.fns.length, 0);
+    if (nImp) t.push({ id: 'imp', label: '导入', n: nImp, render: renderImports });
+    if (report.exports.length) t.push({ id: 'exp', label: '导出', n: report.exports.length, render: renderExports });
+    t.push({ id: 'str', label: '字符串', n: strings.length, render: renderStrings });
+    if (report.extra) t.push({ id: 'extra', label: report.extra.title, n: report.extra.rows.length - 1, render: renderExtra });
+    return t;
+  }
+  function renderTabs() {
+    const t = tabs();
+    if (!t.some((x) => x.id === active)) active = t[0].id;
+    $('[data-tabs]').innerHTML = t
+      .map((x) => `<button type="button" role="tab" data-tab="${x.id}" aria-selected="${x.id === active}">${esc(x.label)}${x.n != null ? `<span>${x.n.toLocaleString()}</span>` : ''}</button>`)
+      .join('');
+    $('[data-tab-body]').innerHTML = t.find((x) => x.id === active)!.render();
+  }
+  $('[data-tabs]').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>('[data-tab]');
+    if (!b) return;
+    active = b.dataset.tab!;
+    renderTabs();
+  });
+
+  const entBar = (v: number) =>
+    `<span class="eb"><i style="width:${(v / 8) * 100}%" data-lvl="${v > 7.2 ? 'hi' : v > 6.5 ? 'mid' : ''}"></i></span>${v.toFixed(2)}`;
+  function renderSections() {
+    return `<div class="scroll"><table class="grid mono"><thead><tr><th>名称</th><th>虚拟地址</th><th>虚拟大小</th><th>文件偏移</th><th>文件大小</th><th>权限</th><th>熵</th></tr></thead><tbody>${report.sections
+      .map(
+        (s) =>
+          `<tr><td>${esc(s.name || '—')}</td><td>${hx(s.va)}</td><td>${hx(s.vsize)}</td><td>${hx(s.off)}</td><td>${s.size.toLocaleString()}</td><td class="${
+            s.flags.includes('W') && s.flags.includes('X') ? 'bad' : ''
+          }">${s.flags}</td><td class="ent">${entBar(s.entropy)}</td></tr>`,
+      )
+      .join('')}</tbody></table></div>`;
+  }
+  function renderImports() {
+    return `<div class="imps">${report.imports
+      .map(
+        (g) =>
+          `<div class="lib"><p class="mono">${esc(g.lib || '?')} <span>${g.fns.length}</span></p><div class="fns">${g.fns
+            .map((f) => {
+              const t = apiTag(f);
+              return `<span class="fn mono${t ? ` hit sev-${API_SEV[t]}` : ''}"${t ? ` title="${t}"` : ''}>${esc(f)}</span>`;
+            })
+            .join('')}</div></div>`,
+      )
+      .join('')}</div>`;
+  }
+  function renderExports() {
+    return `<div class="fns pad">${report.exports.map((f) => `<span class="fn mono">${esc(f)}</span>`).join('')}</div>`;
+  }
+  function stringRows() {
+    const q = strQuery.toLowerCase();
+    const list = strings.filter((s) => (!strOnlyHits || s.tag) && (!q || s.s.toLowerCase().includes(q)));
+    return (
+      list
+        .slice(0, 1500)
+        .map(
+          (s) =>
+            `<li><span class="off">${s.off.toString(16).padStart(8, '0')}</span>${s.wide ? '<span class="w">W</span>' : '<span class="w"></span>'}${
+              s.tag ? `<span class="sev sev-mid">${s.tag}</span>` : ''
+            }<span class="s">${esc(s.s)}</span></li>`,
+        )
+        .join('') +
+      (list.length > 1500 ? `<li class="more">还有 ${(list.length - 1500).toLocaleString()} 条，请用搜索缩小范围</li>` : '') +
+      (list.length ? '' : '<li class="more">没有匹配的字符串</li>')
+    );
+  }
+  function renderStrings() {
+    return `<div class="str-tools"><input class="tinput" data-str-q placeholder="搜索字符串…" value="${esc(strQuery)}" spellcheck="false" /><label class="opt"><input type="checkbox" data-str-hit ${
+      strOnlyHits ? 'checked' : ''
+    } />仅看可疑</label></div><ul class="strs mono" data-str-list>${stringRows()}</ul>`;
+  }
+  function renderExtra() {
+    const [head, ...rows] = report.extra!.rows;
+    return `<div class="scroll"><table class="grid mono"><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows
+      .map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`)
+      .join('')}</tbody></table></div>`;
+  }
+  let st = 0;
+  $('[data-tab-body]').addEventListener('input', (e) => {
+    const el = e.target as HTMLInputElement;
+    if (el.matches('[data-str-q]')) {
+      strQuery = el.value;
+      clearTimeout(st);
+      st = window.setTimeout(() => ($('[data-str-list]').innerHTML = stringRows()), 120);
+    }
+    if (el.matches('[data-str-hit]')) {
+      strOnlyHits = el.checked;
+      $('[data-str-list]').innerHTML = stringRows();
+    }
+  });
+</script>
+
+<style>
+  .drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 280px;
+    padding: 40px 20px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 16px;
+    background:
+      radial-gradient(600px circle at 50% 0%, var(--accent-soft), transparent 60%),
+      color-mix(in oklab, var(--bg-elev) 60%, transparent);
+    text-align: center;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .drop[hidden] {
+    display: none;
+  }
+  .drop:hover,
+  .drop[data-over] {
+    border-color: var(--accent-line);
+  }
+  .drop[data-over] {
+    background-color: var(--accent-soft);
+  }
+  .drop-ico {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 8px;
+    border: 1px solid var(--accent-line);
+    border-radius: 16px;
+    color: var(--accent);
+    box-shadow: 0 0 32px -8px var(--glow);
+  }
+  .drop b {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .drop .mono {
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+
+  .result {
+    display: grid;
+    gap: 16px;
+  }
+  .result[hidden] {
+    display: none;
+  }
+  .filebar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px 10px 16px;
+  }
+  .fname {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .kind {
+    color: var(--accent-text);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .hashes :global(th) {
+    width: 84px;
+  }
+  .hashes :global(.hv) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    word-break: break-all;
+    cursor: copy;
+  }
+  .hashes :global(.hv[data-done]) {
+    color: var(--accent-text);
+  }
+
+  .mits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 14px 16px 16px;
+    list-style: none;
+  }
+  .mits :global(li) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--fg-3);
+    font-size: 12px;
+  }
+  .mits :global(li)::before {
+    content: '✕';
+    color: var(--danger);
+  }
+  .mits :global(li[data-on]) {
+    border-color: var(--accent-line);
+    color: var(--fg);
+  }
+  .mits :global(li[data-on])::before {
+    content: '✓';
+    color: var(--accent-text);
+  }
+  .mits :global(li span) {
+    color: var(--fg-3);
+    font-size: 11px;
+  }
+  .findings :global(.none) {
+    display: block;
+    color: var(--fg-3);
+    text-align: center;
+  }
+
+  .readout {
+    color: var(--fg-2);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .ent-wrap {
+    padding: 12px 16px 4px;
+  }
+  .ent-wrap canvas {
+    width: 100%;
+    height: 140px;
+    cursor: crosshair;
+  }
+  .ent-scale {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 16px 14px;
+    color: var(--fg-3);
+    font-size: 11px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 6px 6px 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .tabs :global(button) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--fg-3);
+    font-size: 13.5px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+  .tabs :global(button:hover) {
+    color: var(--fg);
+  }
+  .tabs :global(button[aria-selected='true']) {
+    border-bottom-color: var(--accent);
+    color: var(--fg);
+  }
+  .tabs :global(button span) {
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .tab-body {
+    max-height: 560px;
+    overflow: auto;
+  }
+
+  .tab-body :global(.scroll) {
+    overflow-x: auto;
+  }
+  .tab-body :global(.grid) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  .tab-body :global(.grid th) {
+    position: sticky;
+    top: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-elev);
+    color: var(--fg-3);
+    font-weight: 400;
+    text-align: left;
+  }
+  .tab-body :global(.grid td) {
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab-body :global(.grid td.bad) {
+    color: var(--danger);
+  }
+  .tab-body :global(.ent) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tab-body :global(.eb) {
+    width: 64px;
+    height: 4px;
+    border-radius: 4px;
+    background: var(--line-strong);
+    overflow: hidden;
+  }
+  .tab-body :global(.eb i) {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+  }
+  .tab-body :global(.eb i[data-lvl='mid']) {
+    background: var(--warn);
+  }
+  .tab-body :global(.eb i[data-lvl='hi']) {
+    background: var(--danger);
+  }
+
+  .tab-body :global(.lib) {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tab-body :global(.lib p) {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .tab-body :global(.lib p span) {
+    color: var(--fg-3);
+    font-weight: 400;
+  }
+  .tab-body :global(.fns) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tab-body :global(.fns.pad) {
+    padding: 14px 16px;
+  }
+  .tab-body :global(.fn) {
+    padding: 2px 7px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--fg-2);
+    font-size: 11.5px;
+  }
+  .tab-body :global(.fn.hit) {
+    border-color: currentColor;
+  }
+
+  .tab-body :global(.str-tools) {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .tab-body :global(.str-tools .tinput) {
+    height: 46px;
+    font-size: 13px;
+  }
+  .tab-body :global(.str-tools .opt) {
+    flex: none;
+  }
+  .tab-body :global(.strs) {
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    font-size: 12.5px;
+  }
+  .tab-body :global(.strs li) {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 3px 16px;
+  }
+  .tab-body :global(.strs li:hover) {
+    background: var(--bg-hover);
+  }
+  .tab-body :global(.strs .off) {
+    flex: none;
+    color: var(--fg-3);
+  }
+  .tab-body :global(.strs .w) {
+    flex: none;
+    width: 10px;
+    color: var(--warn);
+    font-size: 10px;
+  }
+  .tab-body :global(.strs .s) {
+    min-width: 0;
+    color: var(--fg);
+    word-break: break-all;
+  }
+  .tab-body :global(.strs .more) {
+    display: block;
+    padding: 14px 16px;
+    color: var(--fg-3);
+  }
+
+  @media (max-width: 600px) {
+    .filebar {
+      flex-wrap: wrap;
+    }
+    .fname {
+      flex-basis: 100%;
+    }
+    .kind {
+      flex: 1;
+    }
+    .ent-scale span:nth-child(2) {
+      display: none;
+    }
+  }
+</style>

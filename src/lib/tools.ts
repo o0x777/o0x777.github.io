@@ -8,6 +8,13 @@ export const TOOLS = [
     desc: '编码、哈希、加解密，串成一条流水线。✦ Magic 自动剥壳。',
   },
   {
+    slug: 'sample',
+    name: '样本解剖',
+    en: 'Sample Dissector',
+    icon: 'chip',
+    desc: '拖入样本：哈希、熵图、节区、导入表、字符串。样本不出本机。',
+  },
+  {
     slug: 'ioc',
     name: 'IOC 提取',
     en: 'IOC Extractor',
